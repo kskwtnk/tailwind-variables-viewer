@@ -14,7 +14,7 @@
    bun init -y
    ```
    - name: `tailwind-variables-viewer`
-   - version: `1.0.0`
+   - version: `0.0.0`
    - description: プロジェクト説明
    - bin: CLI設定
    - files: 公開ファイル指定
@@ -46,7 +46,7 @@
    dist-cli/
    .DS_Store
    *.log
-   bun.lockb
+   bun.lock
    ```
 
 6. **README.md作成**
@@ -436,8 +436,8 @@ npx tailwind-variables-viewer@latest -c test/fixtures/basic.css -o
 
 各フェーズの完了時にチェック:
 
-- [ ] Phase 1: プロジェクトセットアップ
-- [ ] Phase 2: CSSパーサー実装
+- [x] Phase 1: プロジェクトセットアップ ✅ **完了**
+- [ ] Phase 2: CSSパーサー実装 ← **次はここから**
 - [ ] Phase 3: サーバー・CLI実装
 - [ ] Phase 4: フロントエンド実装
 - [ ] Phase 5: 統合とテスト
