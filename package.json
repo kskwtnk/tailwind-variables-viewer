@@ -16,6 +16,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:cli": "tsc",
+    "prepare": "bun run build:cli",
     "preview": "vite preview",
     "test:build-scenarios": "node scripts/build-test-scenarios.mjs",
     "test:scenarios": "bun run test:build-scenarios && bunx tsx test-scenarios.ts",
