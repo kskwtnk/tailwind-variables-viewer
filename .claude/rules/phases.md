@@ -70,62 +70,217 @@ bun pm ls
 
 ---
 
-## Phase 2: CSSパーサー実装
+## Phase 2: テーマ変数抽出とビルドパイプライン
 
 ### 目標
-@themeディレクティブから変数を抽出する動作するパーサー
+ユーザーのTailwind CSSファイルから`@theme`変数を抽出し、Tailwindでビルドして実際の値を表示する
+
+**重要な設計変更**:
+- ユーザーは**ビルド前のCSSファイル**を指定（`@import "tailwindcss"` + `@theme`を含む）
+- ツール内部でTailwindビルドを実行
+- Tailwindのクラス名スキャン機構を活用
+
+### アーキテクチャ
+
+```
+ユーザーのCSS（app.css）
+  ↓
+@theme変数抽出 (theme-parser.ts)
+  ↓
+HTML生成 (html-generator.ts)
+  各変数に対応するクラス名を含む
+  例: --color-red-500 → <div class="bg-red-500 text-red-500">
+  ↓
+Tailwindビルド (builder.ts)
+  @tailwindcss/cli で .tmp/preview.html → .tmp/preview.css
+  ↓
+:root解析
+  生成されたCSSから実際の変数値を抽出
+  ↓
+表示
+```
+
+### 想定される入力パターン
+
+ユーザーが指定するCSS:
+
+1. **デフォルトのみ**:
+   ```css
+   @import "tailwindcss";
+   ```
+
+2. **すべてリセット**:
+   ```css
+   @import "tailwindcss";
+   @theme {
+     --*: initial;
+   }
+   ```
+
+3. **デフォルト + カスタム**:
+   ```css
+   @import "tailwindcss";
+   @theme {
+     --color-brand-500: oklch(0.65 0.20 200);
+     --spacing-custom: 2.5rem;
+   }
+   ```
+
+4. **カスタムのみ**:
+   ```css
+   @import "tailwindcss";
+   @theme {
+     --*: initial;
+     --color-primary: oklch(0.5 0.2 240);
+   }
+   ```
 
 ### タスク
 
-1. **lib/types.ts実装**
-   - 全型定義を集約
+1. **lib/types.ts更新**
+   - 新しいデータ構造の型定義
+   - ThemeVariable（抽出された@theme変数）
+   - GeneratedHTML（生成されたHTML情報）
 
-2. **lib/parser.ts実装**
-   - PostCSSでCSS解析
-   - @themeルール検出
-   - CSS変数抽出
+2. **lib/theme-parser.ts実装**
+   - PostCSSで`@theme`ブロックを解析
+   - CSS変数（`--*`形式）を抽出
+   - `--*: initial`は特別扱い（リセットマーカー）
+   - ネームスペース検出（--color-*, --spacing-*など）
+
+3. **lib/html-generator.ts実装**
+   - 抽出された変数からHTMLを生成
+   - 各変数に対応するTailwindクラスを含める
+   - 例: `--color-red-500` → `<div class="bg-red-500 text-red-500 border-red-500">`
+   - ユーザーのCSS（`@import`付き）を`<style>`タグで埋め込み
+
+4. **lib/builder.ts実装**
+   - @tailwindcss/cliを実行
+   - .tmp/preview.html → .tmp/preview.css
+   - 子プロセスで実行
    - エラーハンドリング
-   - 型安全な実装
 
-3. **lib/extractor.ts実装**
-   - ネームスペース検出
-   - 変数タイプ判定
-   - 短縮名抽出
-   - ソート処理
-   - 型安全な実装
+5. **:root解析の再利用**
+   - 既存のparser.tsを再利用
+   - 生成されたpreview.cssから`:root`を抽出
+   - 最終的な変数値を取得
 
-4. **テスト用CSSファイル作成**
+6. **テスト用CSSファイル作成**
    ```bash
-   mkdir -p test/fixtures
+   mkdir -p test/scenarios
    ```
-   - basic.css
-   - multiple-blocks.css
-   - complex.css
 
-5. **手動テスト**
+   4つのシナリオ:
+   - `1-default-only.css`
+   - `2-reset-all.css`
+   - `3-extend-defaults.css`
+   - `4-reset-and-custom.css`
+
+7. **統合テスト**
    ```typescript
-   // test-parser.ts
-   import { parseCSSFiles } from './lib/parser';
-   import { organizeVariables } from './lib/extractor';
+   // test-build-pipeline.ts
+   import { parseThemeVariables } from './lib/theme-parser.js';
+   import { generateHTML } from './lib/html-generator.js';
+   import { buildWithTailwind } from './lib/builder.js';
+   import { parseCSS } from './lib/parser.js';
 
    (async () => {
-     const parsed = await parseCSSFiles(['test/fixtures/basic.css']);
-     const organized = organizeVariables(parsed);
-     console.log(JSON.stringify(organized, null, 2));
+     // 1. @theme変数抽出
+     const themeVars = await parseThemeVariables('test/scenarios/1-default-only.css');
+
+     // 2. HTML生成
+     const html = generateHTML(themeVars, 'test/scenarios/1-default-only.css');
+
+     // 3. Tailwindビルド
+     await buildWithTailwind(html);
+
+     // 4. 最終的なCSS解析
+     const parsed = await parseCSS('.tmp/preview.css');
+     console.log(parsed);
    })();
    ```
 
 ### 成果物
-- lib/types.ts
-- lib/parser.ts
-- lib/extractor.ts
-- test/fixtures/*.css
-- test-parser.ts
+- lib/types.ts（更新）
+- lib/theme-parser.ts（新規）
+- lib/html-generator.ts（新規）
+- lib/builder.ts（新規）
+- lib/parser.ts（:root解析、既存を再利用）
+- test/scenarios/*.css（テスト用）
+- test-build-pipeline.ts
 
 ### 確認
 ```bash
-bunx tsx test-parser.ts
-# 変数が正しく抽出・整理されることを確認
+bunx tsx test-build-pipeline.ts
+# 4つのシナリオで期待通りの変数が抽出されることを確認
+```
+
+### データフロー例
+
+```css
+/* 入力: ユーザーのapp.css */
+@import "tailwindcss";
+
+@theme {
+  --color-brand-500: oklch(0.65 0.20 200);
+}
+```
+
+↓ theme-parser.ts
+
+```json
+[
+  {
+    "name": "--color-brand-500",
+    "value": "oklch(0.65 0.20 200)",
+    "namespace": "color"
+  }
+]
+```
+
+↓ html-generator.ts
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    @import "tailwindcss";
+    @theme {
+      --color-brand-500: oklch(0.65 0.20 200);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-brand-500 text-brand-500 border-brand-500"></div>
+</body>
+</html>
+```
+
+↓ builder.ts (@tailwindcss/cli)
+
+```css
+/* .tmp/preview.css */
+:root {
+  --color-brand-500: oklch(0.65 0.20 200);
+}
+/* ... Tailwindが生成したユーティリティクラス */
+```
+
+↓ parser.ts
+
+```json
+{
+  "color": [
+    {
+      "name": "brand-500",
+      "varName": "--color-brand-500",
+      "value": "oklch(0.65 0.20 200)",
+      "type": "color",
+      "namespace": "color"
+    }
+  ]
+}
 ```
 
 ---
