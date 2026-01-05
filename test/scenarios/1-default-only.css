@@ -1,0 +1,8 @@
+/**
+ * Scenario 1: デフォルトのみ
+ * @import "tailwindcss"; をしただけ
+ *
+ * 期待: theme.cssの中身が得られる（すべてのデフォルト変数）
+ */
+
+@import "tailwindcss";

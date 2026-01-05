@@ -2,11 +2,12 @@
 
 Tailwind CSS v4のテーマ変数をブラウザで表示するCLIツールです。
 
-CSSファイルから`@theme`ディレクティブを解析し、インタラクティブなWebインターフェースで表示します。
+TailwindのエントリーポイントとなるCSSファイル（`@import "tailwindcss"` + `@theme`）を指定するだけで、ツール内部でビルドを実行し、テーマ変数をインタラクティブに表示します。
 
 ## 機能
 
-- Tailwind CSS v4の`@theme`ディレクティブを解析
+- Tailwind CSS v4の`@theme`変数を自動抽出
+- ツール内部でTailwindビルドを実行（ユーザーの事前ビルド不要）
 - ネームスペース別に変数を整理（color, spacing, fontなど）
 - カラー、サイズ、フォントのビジュアルプレビュー
 - 変数の検索・フィルタリング
@@ -27,16 +28,12 @@ npx tailwind-variables-viewer -c ./src/app.css
 
 ## 使い方
 
+**重要**: TailwindのエントリーポイントとなるCSSファイルを指定してください。ツールが自動的にビルドを実行します。
+
 ### 基本的な使い方
 
 ```bash
 tailwind-variables-viewer -c ./src/app.css
-```
-
-### 複数のCSSファイルを指定
-
-```bash
-tailwind-variables-viewer -c ./src/base.css -c ./src/theme.css
 ```
 
 ### カスタムポート指定
@@ -55,22 +52,34 @@ tailwind-variables-viewer -c ./src/app.css -o
 
 | オプション | 短縮形 | 説明 | デフォルト |
 |-----------|--------|------|-----------|
-| `--config <path...>` | `-c` | @themeディレクティブを含むCSSファイル | 必須 |
+| `--config <path>` | `-c` | Tailwind CSSエントリーポイント | 必須 |
 | `--port <number>` | `-p` | ポート番号 | 3000 |
 | `--open` | `-o` | ブラウザを自動起動 | false |
 | `--help` | `-h` | ヘルプを表示 | - |
 | `--version` | `-v` | バージョンを表示 | - |
 
-## CSSの例
+## 入力CSSの例
+
+TailwindのエントリーポイントとなるCSSファイル:
 
 ```css
+@import "tailwindcss";
+
 @theme {
-  --color-primary: oklch(0.5 0.2 240);
-  --color-secondary: oklch(0.6 0.15 180);
-  --spacing-4: 1rem;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --color-brand-500: oklch(0.65 0.20 200);
+  --color-brand-600: oklch(0.55 0.18 200);
+  --spacing-custom: 2.5rem;
+  --font-brand: "Custom Font", sans-serif;
 }
 ```
+
+## 仕組み
+
+1. 指定されたCSSファイルから`@theme`変数を抽出
+2. 各変数に対応するTailwindクラスを含むHTMLを生成
+3. `@tailwindcss/cli`でビルドを実行
+4. 生成されたCSSから実際の変数値を解析
+5. ブラウザで視覚的に表示
 
 ## 開発
 

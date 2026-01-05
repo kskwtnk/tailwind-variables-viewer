@@ -1,0 +1,24 @@
+/**
+ * Scenario 4: リセットしてカスタムのみ
+ * @import "tailwindcss"; かつ --*: initial; した上で独自の変数を登録
+ *
+ * 期待: 登録したカスタム変数のみ（デフォルトは含まれない）
+ */
+
+@import "tailwindcss";
+
+@theme {
+  --*: initial;
+
+  /* カスタムカラーのみ */
+  --color-primary: oklch(0.5 0.2 240);
+  --color-secondary: oklch(0.6 0.15 180);
+
+  /* カスタムスペーシングのみ */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+
+  /* カスタムフォントのみ */
+  --font-main: "Inter", system-ui, sans-serif;
+}

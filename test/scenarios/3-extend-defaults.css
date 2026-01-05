@@ -1,0 +1,21 @@
+/**
+ * Scenario 3: デフォルトに追加
+ * @import "tailwindcss"; かつ 独自の色やサイズを登録
+ *
+ * 期待: theme.cssの中身 + 登録したカスタム変数
+ */
+
+@import "tailwindcss";
+
+@theme {
+  /* カスタムカラー */
+  --color-brand-500: oklch(0.65 0.20 200);
+  --color-brand-600: oklch(0.55 0.18 200);
+
+  /* カスタムスペーシング */
+  --spacing-custom: 2.5rem;
+  --spacing-header: 5rem;
+
+  /* カスタムフォント */
+  --font-brand: "Custom Font", sans-serif;
+}

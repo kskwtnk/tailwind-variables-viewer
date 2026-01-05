@@ -1,0 +1,12 @@
+/**
+ * Scenario 2: すべてリセット
+ * @import "tailwindcss"; かつ --*: initial; でリセット
+ *
+ * 期待: 何も得られない（すべてリセットされる）
+ */
+
+@import "tailwindcss";
+
+@theme {
+  --*: initial;
+}
