@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# output
+dist/
+dist-cli/
+*.tgz
+
+# logs
+logs
+*.log
+
+# caches
+.cache
+*.tsbuildinfo
+
+# dotenv environment variable files
+.env
+.env.local
