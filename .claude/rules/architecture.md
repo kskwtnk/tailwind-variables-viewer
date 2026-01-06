@@ -19,14 +19,8 @@ tailwind-variables-viewer/
 │   ├── server.ts          # Viteプレビューサーバー
 │   └── types.ts           # 型定義
 ├── src/
-│   ├── App.svelte         # メインアプリコンポーネント
-│   ├── lib/
-│   │   ├── VariableCard.svelte    # 変数表示カード
-│   │   ├── NamespaceSection.svelte # ネームスペースセクション
-│   │   └── SearchBar.svelte        # 検索バー
-│   ├── main.ts            # エントリーポイント
-│   ├── app.css            # グローバルスタイル
-│   └── vite-env.d.ts      # Vite型定義
+│   ├── index.html         # フロントエンド（Vanilla JS）
+│   └── app.css            # グローバルスタイル
 ├── dist/                  # ビルド済みフロントエンド
 └── .tmp/                  # 一時ビルドファイル（gitignore）
     ├── preview.html       # 生成されたHTMLプレビュー
@@ -43,17 +37,18 @@ tailwind-variables-viewer/
 - `picocolors` - ターミナル出力の色付け（chalkの軽量代替）
 - `open` - ブラウザ自動起動
 
-### 開発依存（4個）
+### 開発依存（2個）
 
 - `typescript` - TypeScript本体
 - `@types/node` - Node.js型定義
-- `svelte` - Svelteフレームワーク
-- `@sveltejs/vite-plugin-svelte` - Vite統合
 
 ### 言語・フレームワーク方針
 
-- **TypeScript**: 型安全性と開発体験向上
-- **Svelte**: 軽量・高速なUIフレームワーク
+- **TypeScript**: 型安全性と開発体験向上（CLIとライブラリ）
+- **Vanilla JS**: フロントエンド（依存関係最小化、標準Web API使用）
+
+> **注**: 当初Svelte 5を採用したが、ADR-002により Vanilla JSに変更。
+> 理由: 実装機能がシンプル、依存関係削減、保守性向上。
 
 ## データフロー
 
@@ -78,8 +73,14 @@ Tailwindビルド実行 (builder.ts)
   ↓
 Vite preview server起動 (server.ts)
   ↓
-フロントエンド表示 (src/)
-  変数のプレビューとコピー機能
+静的ファイル配信 (dist/)
+  index.html + app.css
+  ↓
+Vanilla JSでAPI取得とレンダリング
+  fetch('/api/variables.json')
+  ↓
+ユーザーインタラクション
+  検索フィルタリング、クリップボードコピー
 ```
 
 ## 重要な設計思想

@@ -352,81 +352,81 @@ curl http://localhost:3000/api/variables
 ### 目標
 変数を表示する動作するUI
 
+### 方針変更（ADR-002参照）
+
+**当初**: Svelte 5を使用
+**変更後**: Vanilla JSを使用（依存関係削減のため）
+
 ### タスク
 
-1. **vite.config.ts作成**
+1. **vite.config.ts更新**
    ```typescript
    import { defineConfig } from 'vite';
-   import { svelte } from '@sveltejs/vite-plugin-svelte';
 
    export default defineConfig({
-     plugins: [svelte()],
      root: 'src',
      build: {
        outDir: '../dist',
        emptyOutDir: true,
      },
+     preview: {
+       port: 3000,
+       strictPort: false,
+     },
    });
    ```
 
-2. **src/vite-env.d.ts作成**
-   ```typescript
-   /// <reference types="svelte" />
-   /// <reference types="vite/client" />
-   ```
+2. **src/index.html作成**
+   - インラインJavaScript（`<script type="module">`）
+   - APIから変数取得
+   - 検索フィルタリング
+   - クリップボードコピー機能
+   - グローバルスタイル読み込み
 
-3. **src/main.ts作成**
-   ```typescript
-   import App from './App.svelte';
-   import './app.css';
-
-   const app = new App({
-     target: document.getElementById('app')!,
-   });
-
-   export default app;
-   ```
-
-4. **src/App.svelte作成**
-   - APIからデータ取得（onMount）
-   - 状態管理（loading, error, variables）
-   - 検索フィルタリング（リアクティブ）
-   - レイアウト
-
-5. **src/lib/コンポーネント作成**
-   - SearchBar.svelte（検索バー）
-   - NamespaceSection.svelte（ネームスペースセクション）
-   - VariableCard.svelte（変数カード）
-
-6. **src/app.css作成**
+3. **src/app.css作成**
    - グローバルスタイル
    - リセットCSS
+   - 変数カード、検索バーなどのスタイル
 
-7. **package.jsonスクリプト追加**
+4. **package.jsonスクリプト更新**
    ```json
    {
      "scripts": {
        "dev": "vite",
        "build": "vite build",
-       "preview": "vite preview",
-       "check": "svelte-check"
+       "preview": "vite preview"
      }
    }
    ```
 
+### 実装内容
+
+**src/index.html**:
+- `fetch('/api/variables.json')` でデータ取得
+- テンプレートリテラルでHTML生成
+- `addEventListener` でイベント処理
+- 検索: `input`イベントで絞り込み
+- コピー: `click`イベントでクリップボードコピー
+
 ### 成果物
-- vite.config.ts
+- vite.config.ts（Svelteプラグイン削除）
+- src/index.html（Vanilla JS実装）
+- src/app.css
+
+### 削除するファイル
 - src/App.svelte
 - src/lib/*.svelte
 - src/main.ts
-- src/app.css
 - src/vite-env.d.ts
 
 ### 確認
 ```bash
-bun run dev
-# ブラウザで http://localhost:5173 を開く
+bun run build
+node dist-cli/cli/index.js -c test/scenarios/3-extend-defaults.css
+# ブラウザで http://localhost:3000 を開く
 # 変数が表示されることを確認
+# 検索機能が動作することを確認
+# コピー機能が動作することを確認
 ```
 
 ---

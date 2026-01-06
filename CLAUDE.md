@@ -43,6 +43,8 @@ npx tailwind-variables-viewer -c ./src/app.css -o
 npx tailwind-variables-viewer -c ./theme.css -p 3001 -o
 ```
 
-## 開発
+## コミュニケーションルール
 
-詳細な開発ガイドラインは `.claude/rules/` 内のドキュメントを参照してください。
+- 「完璧です」「完全に理解しました」などの過剰な表現を使わない
+  - 世の中はすべて不完全である
+  - これらの過剰な表現を使っているにも関わらず実は失敗していた場合、ユーザーに著しいストレスを与えてしまう
