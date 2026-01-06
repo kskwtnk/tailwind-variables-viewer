@@ -1,6 +1,7 @@
 import { preview } from 'vite';
 import { writeFile, mkdir } from 'fs/promises';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { OrganizedVariables, ServerOptions, ServerResult } from './types.js';
 
 /**
@@ -16,9 +17,12 @@ export async function startServer(
 ): Promise<ServerResult> {
   const port = options.port || 3000;
 
-  // Get absolute paths
-  const projectRoot = resolve(process.cwd());
-  const distDir = resolve(projectRoot, 'dist');
+  // Get the directory where the CLI is installed (inside node_modules)
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  // Go up two levels: lib -> dist-cli -> package root
+  const packageRoot = resolve(__dirname, '..', '..');
+  const distDir = resolve(packageRoot, 'dist');
   const apiDir = resolve(distDir, 'api');
 
   // Write variables as static JSON file in dist/api/
@@ -30,15 +34,18 @@ export async function startServer(
   );
 
   // Start Vite preview server
-  // Note: preview() automatically uses build.outDir from vite.config.ts
+  // Serve the built dist/ directory
   const previewServer = await preview({
     preview: {
       port,
       strictPort: false, // Auto-search for available port if specified port is in use
       open: false,       // Don't auto-open browser (CLI handles this)
     },
-    // Use vite.config.ts from current directory
-    configFile: resolve(projectRoot, 'vite.config.ts'),
+    configFile: false,   // Don't load any config file - use defaults
+    build: {
+      outDir: 'dist',    // Relative path from root
+    },
+    root: packageRoot,   // Use package root as working directory
   });
 
   // Wait for server to be fully ready

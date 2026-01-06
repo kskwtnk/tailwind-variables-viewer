@@ -38,6 +38,7 @@ export interface OrganizedVariable {
   name: string;
   varName: string;
   value: string;
+  resolvedValue?: string; // var()参照を解決した値（オプショナル）
   type: VariableType;
   namespace: string;
 }

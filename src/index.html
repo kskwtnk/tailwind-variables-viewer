@@ -78,14 +78,17 @@
     }
 
     function renderPreview(variable) {
+      // 解決済みの値があればそれを使用、なければ元の値
+      const displayValue = variable.resolvedValue || variable.value;
+
       if (variable.type === 'color') {
-        return `<div class="color-swatch" style="background: ${variable.value}"></div>`;
+        return `<div class="color-swatch" style="background: ${displayValue}"></div>`;
       }
       if (variable.type === 'size') {
-        return `<div class="size-bar" style="width: ${variable.value}"></div>`;
+        return `<div class="size-bar" style="width: ${displayValue}"></div>`;
       }
       if (variable.type === 'font') {
-        return `<div class="font-sample" style="font-family: ${variable.value}">The quick brown fox</div>`;
+        return `<div class="font-sample" style="font-family: ${displayValue}">The quick brown fox</div>`;
       }
       return '';
     }

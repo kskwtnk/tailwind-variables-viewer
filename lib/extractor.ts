@@ -54,6 +54,46 @@ function extractShortName(varName: string, namespace: string): string {
 }
 
 /**
+ * var(--variable-name)から変数名を抽出
+ */
+function extractVarReference(value: string): string | null {
+  const match = value.match(/var\((--[^,)]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * 変数参照を解決
+ * @param value - 解決する値（var(--color-blue-500)など）
+ * @param variableMap - 変数名 → 値のマップ
+ * @param visited - 循環参照チェック用
+ * @param maxDepth - 最大解決深度
+ */
+function resolveReference(
+  value: string,
+  variableMap: Map<string, string>,
+  visited: Set<string> = new Set(),
+  maxDepth: number = 10
+): string | null {
+  if (maxDepth === 0) return null; // 深すぎる参照
+
+  const refVarName = extractVarReference(value);
+  if (!refVarName) return null; // 参照ではない
+
+  if (visited.has(refVarName)) return null; // 循環参照
+  visited.add(refVarName);
+
+  const refValue = variableMap.get(refVarName);
+  if (!refValue) return null; // 参照先が見つからない
+
+  // 参照先がさらに参照の場合は再帰的に解決
+  if (/var\(--/.test(refValue)) {
+    return resolveReference(refValue, variableMap, visited, maxDepth - 1);
+  }
+
+  return refValue;
+}
+
+/**
  * 変数リストをソート
  * spacing: 数値順、その他: アルファベット順
  */
@@ -76,13 +116,22 @@ function sortVariables(variables: OrganizedVariable[], namespace: string): Organ
  */
 function organizeVariables(parsedResults: ParsedCSS[]): OrganizedVariables {
   const organized: OrganizedVariables = {};
+  const variableMap = new Map<string, string>();
 
-  // 全ファイル・全ブロックから変数を収集
+  // ステップ1: 全変数を収集してマップを作成
+  for (const result of parsedResults) {
+    for (const block of result.rootBlocks) {
+      for (const variable of block.variables) {
+        variableMap.set(variable.name, variable.value);
+      }
+    }
+  }
+
+  // ステップ2: 変数を整理
   for (const result of parsedResults) {
     for (const block of result.rootBlocks) {
       for (const variable of block.variables) {
         const namespace = detectNamespace(variable.name);
-        const type = detectType(variable.value);
         const shortName = extractShortName(variable.name, namespace);
 
         if (!organized[namespace]) {
@@ -94,10 +143,24 @@ function organizeVariables(parsedResults: ParsedCSS[]): OrganizedVariables {
           v => v.varName === variable.name
         );
 
+        // 参照を解決
+        let resolvedValue: string | undefined;
+        if (/var\(--/.test(variable.value)) {
+          const resolved = resolveReference(variable.value, variableMap);
+          if (resolved) {
+            resolvedValue = resolved;
+          }
+        }
+
+        // 実際の値（解決済みまたは元の値）でタイプ判定
+        const valueForType = resolvedValue || variable.value;
+        const type = detectType(valueForType);
+
         const organizedVar: OrganizedVariable = {
           name: shortName,
           varName: variable.name,
           value: variable.value,
+          resolvedValue,
           type,
           namespace
         };

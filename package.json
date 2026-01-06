@@ -1,16 +1,24 @@
 {
   "name": "tailwind-variables-viewer",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "View Tailwind CSS v4 theme variables in your browser",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kskwtnk/tailwind-variables-viewer"
+  },
+  "bugs": {
+    "url": "https://github.com/kskwtnk/tailwind-variables-viewer/issues"
+  },
+  "homepage": "https://github.com/kskwtnk/tailwind-variables-viewer#readme",
   "bin": {
     "tailwind-variables-viewer": "./dist-cli/cli/index.js"
   },
   "files": [
-    "cli",
-    "lib",
     "dist",
-    "dist-cli"
+    "dist-cli",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "dev": "vite",
@@ -30,7 +38,7 @@
     "variables",
     "viewer"
   ],
-  "author": "",
+  "author": "Keisuke Watanuki (kskwtnk)",
   "license": "MIT",
   "dependencies": {
     "commander": "^14.0.2",

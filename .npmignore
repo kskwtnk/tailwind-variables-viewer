@@ -1,0 +1,42 @@
+# Development and testing
+cli/
+lib/
+src/
+scripts/
+test/
+.claude/
+vite.config.ts
+tsconfig.json
+
+# Build artifacts and temporary files
+.tmp/
+dist-cli/.tmp/
+.vite/
+.tsbuildinfo
+*.tsbuildinfo
+
+# Git and repository files
+.git/
+.gitignore
+.github/
+
+# CI/CD
+.github/workflows/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Node modules
+node_modules/
+
+# Test output
+test-scenarios.ts
+test-scenarios.js
