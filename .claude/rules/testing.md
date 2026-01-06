@@ -278,13 +278,17 @@ npx tailwind-variables-viewer -c ./src/app.css -o
 
 ## リリース前チェックリスト
 
-- [ ] 全テストケース通過
-- [ ] 実プロジェクトで動作確認
-- [ ] README完成
-- [ ] package.json完備
+- [x] 全テストケース通過（Phase 5完了）
+  - [x] Scenario 1: 375個
+  - [x] Scenario 2: 0個（全リセット）
+  - [x] Scenario 3: 380個（デフォルト + カスタム）
+  - [x] Scenario 4: 6個（カスタムのみ）
+- [ ] 実プロジェクトで動作確認（Phase 5スキップ、ユーザー環境で実施）
+- [x] README完成（Phase 5で更新）
+- [x] package.json完備（prepare スクリプト追加）
 - [ ] .gitignore設定
 - [ ] LICENSE追加
 - [ ] npm audit問題なし
-- [ ] ビルド成功
-- [ ] npm linkでローカルテスト
-- [ ] バージョン番号確定
+- [x] ビルド成功（Phase 5で確認）
+- [ ] npm linkでローカルテスト（Phase 6）
+- [ ] バージョン番号確定（Phase 6）

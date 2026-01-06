@@ -608,5 +608,5 @@ npx tailwind-variables-viewer@latest -c test/fixtures/basic.css -o
 - [x] Phase 2: CSSパーサー実装 ✅ **完了**
 - [x] Phase 3: サーバー・CLI実装 ✅ **完了**
 - [x] Phase 4: フロントエンド実装 ✅ **完了**
-- [ ] Phase 5: 統合とテスト ← **次はここから**
-- [ ] Phase 6: 公開準備
+- [x] Phase 5: 統合とテスト ← **完了**
+- [ ] Phase 6: 公開準備 ← **次はここから**
