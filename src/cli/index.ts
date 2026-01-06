@@ -5,10 +5,10 @@ import pc from 'picocolors';
 import open from 'open';
 import { resolve } from 'path';
 import { access } from 'fs/promises';
-import { parseThemeVariables } from '../lib/theme-parser.js';
-import { organizeVariables } from '../lib/extractor.js';
-import { startServer } from '../lib/server.js';
-import type { ThemeVariable } from '../lib/types.js';
+import { parseThemeVariables } from '../core/theme-parser.js';
+import { organizeVariables } from '../core/extractor.js';
+import { startServer } from '../core/server.js';
+import type { ThemeVariable } from '../core/types.js';
 
 const program = new Command();
 

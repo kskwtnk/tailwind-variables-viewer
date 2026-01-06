@@ -6,8 +6,8 @@
     "lib": [
       "ES2020"
     ],
-    "outDir": "./dist-cli",
-    "rootDir": ".",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -22,13 +22,13 @@
     ]
   },
   "include": [
-    "cli/**/*",
-    "lib/**/*"
+    "src/cli/**/*",
+    "src/core/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "dist-cli",
-    "src"
+    "public",
+    "src/ui"
   ]
 }

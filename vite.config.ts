@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'src',
+  root: 'src/ui',
   build: {
-    outDir: '../dist',
+    outDir: '../../dist/ui',
     emptyOutDir: true,
   },
   preview: {

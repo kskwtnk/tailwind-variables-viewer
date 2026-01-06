@@ -20,12 +20,12 @@ export async function startServer(
   // Get the directory where the CLI is installed (inside node_modules)
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  // Go up two levels: lib -> dist-cli -> package root
+  // Go up three levels: core -> dist -> package root
   const packageRoot = resolve(__dirname, '..', '..');
-  const distDir = resolve(packageRoot, 'dist');
-  const apiDir = resolve(distDir, 'api');
+  const distUiDir = resolve(packageRoot, 'dist', 'ui');
+  const apiDir = resolve(distUiDir, 'api');
 
-  // Write variables as static JSON file in dist/api/
+  // Write variables as static JSON file in dist/ui/api/
   await mkdir(apiDir, { recursive: true });
   await writeFile(
     resolve(apiDir, 'variables.json'),
@@ -34,7 +34,7 @@ export async function startServer(
   );
 
   // Start Vite preview server
-  // Serve the built dist/ directory
+  // Serve the built dist/ui/ directory
   const previewServer = await preview({
     preview: {
       port,
@@ -43,7 +43,7 @@ export async function startServer(
     },
     configFile: false,   // Don't load any config file - use defaults
     build: {
-      outDir: 'dist',    // Relative path from root
+      outDir: distUiDir, // Absolute path to dist/ui
     },
     root: packageRoot,   // Use package root as working directory
   });

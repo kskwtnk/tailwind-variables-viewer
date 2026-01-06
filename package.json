@@ -12,11 +12,10 @@
   },
   "homepage": "https://github.com/kskwtnk/tailwind-variables-viewer#readme",
   "bin": {
-    "tailwind-variables-viewer": "./dist-cli/cli/index.js"
+    "tailwind-variables-viewer": "./dist/cli/index.js"
   },
   "files": [
     "dist",
-    "dist-cli",
     "LICENSE",
     "README.md"
   ],
