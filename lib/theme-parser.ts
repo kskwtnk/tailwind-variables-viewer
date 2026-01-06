@@ -1,18 +1,7 @@
 import postcss from 'postcss';
 import { readFile } from 'fs/promises';
 import type { ThemeVariable, ParsedTheme } from './types.js';
-import { KNOWN_NAMESPACES } from './types.js';
-
-/**
- * ネームスペースを検出
- */
-function detectNamespace(varName: string): string {
-  const match = varName.match(/^--([^-]+)-/);
-  if (!match) return 'other';
-
-  const prefix = match[1];
-  return KNOWN_NAMESPACES.includes(prefix as any) ? prefix : 'other';
-}
+import { detectNamespace } from './types.js';
 
 /**
  * @themeディレクティブからCSS変数を抽出

@@ -87,13 +87,10 @@ async function runViewer(options: { config: string[]; port: number; open: boolea
   // ParsedCSS形式に変換してorganizeVariables()に渡す
   const parsedCSS = {
     filePath: options.config[0],
-    rootBlocks: [{
-      variables: allVariables.map(v => ({
-        name: v.name,
-        value: v.value,
-        raw: `${v.name}: ${v.value};`
-      }))
-    }]
+    variables: allVariables.map(v => ({
+      name: v.name,
+      value: v.value
+    }))
   };
   const organized = organizeVariables([parsedCSS]);
 

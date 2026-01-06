@@ -19,16 +19,11 @@ export interface ParsedTheme {
 export interface Variable {
   name: string;
   value: string;
-  raw: string;
-}
-
-export interface RootBlock {
-  variables: Variable[];
 }
 
 export interface ParsedCSS {
   filePath: string;
-  rootBlocks: RootBlock[];
+  variables: Variable[];
 }
 
 // 整理後の変数
@@ -47,13 +42,6 @@ export interface OrganizedVariables {
   [namespace: string]: OrganizedVariable[];
 }
 
-// CLI関連
-export interface CLIOptions {
-  config: string;        // 単一のCSSファイルパス
-  port: number;
-  open: boolean;
-}
-
 // サーバー関連
 export interface ServerOptions {
   port?: number;
@@ -65,14 +53,6 @@ export interface ServerResult {
   port: number;
   url: string;
 }
-
-// API レスポンス
-export interface VariablesResponse extends OrganizedVariables {}
-
-export interface ErrorResponse {
-  error: string;
-}
-
 
 // ネームスペース定数
 export const KNOWN_NAMESPACES = [
@@ -90,3 +70,22 @@ export const KNOWN_NAMESPACES = [
 ] as const;
 
 export type Namespace = typeof KNOWN_NAMESPACES[number] | 'other';
+
+/**
+ * 型ガード: 既知のネームスペースかどうか判定
+ */
+function isKnownNamespace(prefix: string): prefix is typeof KNOWN_NAMESPACES[number] {
+  return (KNOWN_NAMESPACES as readonly string[]).includes(prefix);
+}
+
+/**
+ * CSS変数名からネームスペースを検出
+ * 例: --color-mint-500 → color
+ */
+export function detectNamespace(varName: string): string {
+  const match = varName.match(/^--([^-]+)-/);
+  if (!match) return 'other';
+
+  const prefix = match[1];
+  return isKnownNamespace(prefix) ? prefix : 'other';
+}

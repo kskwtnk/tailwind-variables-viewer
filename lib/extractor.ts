@@ -1,19 +1,7 @@
 // lib/extractor.ts
 
 import type { ParsedCSS, OrganizedVariables, OrganizedVariable, VariableType } from './types.js';
-import { KNOWN_NAMESPACES } from './types.js';
-
-/**
- * CSS変数名からネームスペースを検出
- * 例: --color-mint-500 → color
- */
-function detectNamespace(varName: string): string {
-  const match = varName.match(/^--([^-]+)-/);
-  if (!match) return 'other';
-
-  const prefix = match[1];
-  return KNOWN_NAMESPACES.includes(prefix as any) ? prefix : 'other';
-}
+import { detectNamespace } from './types.js';
 
 /**
  * 値から変数のタイプを推測
@@ -115,73 +103,57 @@ function sortVariables(variables: OrganizedVariable[], namespace: string): Organ
  * パース結果から変数を抽出・整理
  */
 function organizeVariables(parsedResults: ParsedCSS[]): OrganizedVariables {
-  const organized: OrganizedVariables = {};
   const variableMap = new Map<string, string>();
+  const organizedMap = new Map<string, Map<string, OrganizedVariable>>();
 
-  // ステップ1: 全変数を収集してマップを作成
+  // 全変数を1回のループで処理
   for (const result of parsedResults) {
-    for (const block of result.rootBlocks) {
-      for (const variable of block.variables) {
-        variableMap.set(variable.name, variable.value);
+    for (const variable of result.variables) {
+      // 変数マップに追加（参照解決用）
+      variableMap.set(variable.name, variable.value);
+
+      const namespace = detectNamespace(variable.name);
+      const shortName = extractShortName(variable.name, namespace);
+
+      // ネームスペース別のマップを初期化
+      if (!organizedMap.has(namespace)) {
+        organizedMap.set(namespace, new Map());
       }
+
+      // 参照を解決（後で一括処理する方が効率的だが、ここでは簡単のため都度処理）
+      let resolvedValue: string | undefined;
+      if (/var\(--/.test(variable.value)) {
+        const resolved = resolveReference(variable.value, variableMap);
+        if (resolved) {
+          resolvedValue = resolved;
+        }
+      }
+
+      // 実際の値（解決済みまたは元の値）でタイプ判定
+      const valueForType = resolvedValue || variable.value;
+      const type = detectType(valueForType);
+
+      const organizedVar: OrganizedVariable = {
+        name: shortName,
+        varName: variable.name,
+        value: variable.value,
+        resolvedValue,
+        type,
+        namespace
+      };
+
+      // Mapで管理（重複は自動的に上書き）
+      organizedMap.get(namespace)!.set(variable.name, organizedVar);
     }
   }
 
-  // ステップ2: 変数を整理
-  for (const result of parsedResults) {
-    for (const block of result.rootBlocks) {
-      for (const variable of block.variables) {
-        const namespace = detectNamespace(variable.name);
-        const shortName = extractShortName(variable.name, namespace);
-
-        if (!organized[namespace]) {
-          organized[namespace] = [];
-        }
-
-        // 重複チェック（同じvarNameが既に存在する場合は上書き）
-        const existingIndex = organized[namespace].findIndex(
-          v => v.varName === variable.name
-        );
-
-        // 参照を解決
-        let resolvedValue: string | undefined;
-        if (/var\(--/.test(variable.value)) {
-          const resolved = resolveReference(variable.value, variableMap);
-          if (resolved) {
-            resolvedValue = resolved;
-          }
-        }
-
-        // 実際の値（解決済みまたは元の値）でタイプ判定
-        const valueForType = resolvedValue || variable.value;
-        const type = detectType(valueForType);
-
-        const organizedVar: OrganizedVariable = {
-          name: shortName,
-          varName: variable.name,
-          value: variable.value,
-          resolvedValue,
-          type,
-          namespace
-        };
-
-        if (existingIndex >= 0) {
-          // 上書き（後のファイルが優先）
-          organized[namespace][existingIndex] = organizedVar;
-        } else {
-          // 新規追加
-          organized[namespace].push(organizedVar);
-        }
-      }
-    }
-  }
-
-  // 各ネームスペースをソート
-  for (const namespace in organized) {
-    organized[namespace] = sortVariables(organized[namespace], namespace);
+  // MapをOrganizedVariables形式に変換してソート
+  const organized: OrganizedVariables = {};
+  for (const [namespace, varsMap] of organizedMap) {
+    organized[namespace] = sortVariables(Array.from(varsMap.values()), namespace);
   }
 
   return organized;
 }
 
-export { organizeVariables, detectNamespace, detectType, extractShortName };
+export { organizeVariables };
