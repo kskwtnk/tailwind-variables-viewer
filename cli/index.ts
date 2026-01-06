@@ -6,11 +6,9 @@ import open from 'open';
 import { resolve } from 'path';
 import { access } from 'fs/promises';
 import { parseThemeVariables } from '../lib/theme-parser.js';
-import { generateHTML } from '../lib/html-generator.js';
-import { buildWithTailwind } from '../lib/builder.js';
-import { parseCSS } from '../lib/parser.js';
 import { organizeVariables } from '../lib/extractor.js';
 import { startServer } from '../lib/server.js';
+import type { ThemeVariable } from '../lib/types.js';
 
 const program = new Command();
 
@@ -50,47 +48,70 @@ async function runViewer(options: { config: string[]; port: number; open: boolea
   console.log(pc.cyan('Parsing @theme directives...'));
   const parsedTheme = await parseThemeVariables(options.config[0]);
 
-  if (parsedTheme.variables.length === 0) {
-    console.warn(pc.yellow('Warning: No @theme variables found'));
-    console.log(pc.gray('\nMake sure your CSS contains @theme directives:'));
-    console.log(pc.gray('@theme {'));
-    console.log(pc.gray('  --color-primary: oklch(0.5 0.2 240);'));
-    console.log(pc.gray('}'));
-    process.exit(0);
+  // @import "tailwindcss"がある場合、デフォルト変数も読み込む
+  let allVariables = [...parsedTheme.variables];
+  if (parsedTheme.hasImport) {
+    console.log(pc.cyan('Detected @import "tailwindcss", loading default theme variables...'));
+    try {
+      const tailwindThemePath = resolve('node_modules/tailwindcss/theme.css');
+      const tailwindTheme = await parseThemeVariables(tailwindThemePath, false);
+      console.log(pc.green(`✓ Loaded ${tailwindTheme.variables.length} default theme variables`));
+
+      // リセット処理を適用
+      let defaultVars = tailwindTheme.variables;
+      if (parsedTheme.hasReset) {
+        // --*: initial が存在する場合、全デフォルト変数を除外
+        console.log(pc.cyan('Applying global reset (--*: initial)'));
+        defaultVars = [];
+      } else {
+        // ネームスペース別リセットや個別リセットを処理
+        defaultVars = applyResets(defaultVars, parsedTheme.variables);
+      }
+
+      // デフォルト + ユーザー変数をマージ（ユーザー変数が優先、initialは除外）
+      allVariables = mergeAndDeduplicate([...defaultVars, ...parsedTheme.variables]);
+    } catch (error) {
+      console.warn(pc.yellow('Warning: Could not load Tailwind default theme'));
+    }
   }
 
-  console.log(pc.green(`✓ Found ${parsedTheme.variables.length} @theme variables`));
+  if (allVariables.length === 0) {
+    console.warn(pc.yellow('⚠ No @theme variables found'));
+  }
 
-  // 3. Generate HTML with Tailwind classes
-  console.log(pc.cyan('Generating preview HTML...'));
-  const generatedHTML = await generateHTML(parsedTheme.variables, options.config[0]);
+  console.log(pc.green(`✓ Found ${allVariables.length} @theme variables (user: ${parsedTheme.variables.length})`));
 
-  // 4. Build with Tailwind CLI
-  console.log(pc.cyan('Building with Tailwind CSS...'));
-  await buildWithTailwind(generatedHTML.html, options.config[0]);
-  console.log(pc.green('✓ Tailwind build completed'));
-
-  // 5. Parse generated CSS to extract final variable values
-  console.log(pc.cyan('Extracting variable values...'));
-  const parsedFiles = await parseCSS('.tmp/preview.css');
-  const organized = organizeVariables([parsedFiles]);
+  // 3. Organize variables for display (skip build process)
+  console.log(pc.cyan('Organizing variables...'));
+  // theme-parser.tsから取得した変数を直接extractor.tsで整理
+  // ParsedCSS形式に変換してorganizeVariables()に渡す
+  const parsedCSS = {
+    filePath: options.config[0],
+    rootBlocks: [{
+      variables: allVariables.map(v => ({
+        name: v.name,
+        value: v.value,
+        raw: `${v.name}: ${v.value};`
+      }))
+    }]
+  };
+  const organized = organizeVariables([parsedCSS]);
 
   const totalVariables = Object.values(organized)
     .reduce((sum, vars) => sum + vars.length, 0);
 
   if (totalVariables === 0) {
-    console.warn(pc.yellow('Warning: No variables found in generated CSS'));
-    process.exit(0);
+    console.log(pc.yellow('⚠ No theme variables found'));
+  } else {
+    console.log(pc.green(`✓ Extracted ${totalVariables} theme variables`));
+
+    // Display variables by namespace
+    for (const [namespace, vars] of Object.entries(organized)) {
+      console.log(pc.gray(`  - ${namespace} (${vars.length})`));
+    }
   }
 
-  console.log(pc.green(`✓ Extracted ${totalVariables} theme variables`));
-
-  // Display variables by namespace
-  for (const [namespace, vars] of Object.entries(organized)) {
-    console.log(pc.gray(`  - ${namespace} (${vars.length})`));
-  }
-
-  // 6. Start server
+  // 4. Start server
   console.log(pc.cyan('\nStarting server...'));
   const { server, port, url } = await startServer(organized, { port: options.port });
 
@@ -99,7 +120,7 @@ async function runViewer(options: { config: string[]; port: number; open: boolea
   console.log(pc.gray(`\nVariables: ${totalVariables}`));
   console.log(pc.gray('Press Ctrl+C to stop\n'));
 
-  // 7. Open browser if requested
+  // 5. Open browser if requested
   if (options.open) {
     await open(url);
   }
@@ -112,6 +133,56 @@ async function runViewer(options: { config: string[]; port: number; open: boolea
       process.exit(0);
     });
   });
+}
+
+/**
+ * リセットパターンを適用してデフォルト変数をフィルタリング
+ */
+function applyResets(
+  defaultVars: ThemeVariable[],
+  userVars: ThemeVariable[]
+): ThemeVariable[] {
+  // ユーザー定義の `initial` 値を持つ変数を抽出（リセットパターン）
+  const resetPatterns = userVars
+    .filter(v => v.value.trim() === 'initial')
+    .map(v => v.name);
+
+  if (resetPatterns.length === 0) {
+    return defaultVars;
+  }
+
+  // デフォルト変数から、リセットパターンに一致するものを除外
+  return defaultVars.filter(v => {
+    return !resetPatterns.some(pattern => {
+      if (pattern.endsWith('-*')) {
+        // --color-* のようなワイルドカードパターン
+        const prefix = pattern.slice(0, -2); // '-*' を除去
+        return v.name.startsWith(prefix);
+      }
+      // 完全一致
+      return v.name === pattern;
+    });
+  });
+}
+
+/**
+ * 変数をマージして重複を除去
+ * - 後の変数が優先（上書き）
+ * - `initial` 値の変数は除外
+ */
+function mergeAndDeduplicate(
+  vars: ThemeVariable[]
+): ThemeVariable[] {
+  const map = new Map<string, ThemeVariable>();
+
+  for (const v of vars) {
+    // `initial` 値の変数は除外（リセット用なので表示しない）
+    if (v.value.trim() !== 'initial') {
+      map.set(v.name, v); // 後の変数が優先（上書き）
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 // Validate that CSS files exist

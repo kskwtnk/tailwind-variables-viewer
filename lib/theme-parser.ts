@@ -16,15 +16,29 @@ function detectNamespace(varName: string): string {
 
 /**
  * @themeディレクティブからCSS変数を抽出
+ *
+ * @param filePath - パースするCSSファイルのパス
+ * @param checkImport - @import "tailwindcss" をチェックするか（デフォルト: true）
  */
-export async function parseThemeVariables(filePath: string): Promise<ParsedTheme> {
+export async function parseThemeVariables(filePath: string, checkImport = true): Promise<ParsedTheme> {
   const css = await readFile(filePath, 'utf8');
   const root = postcss.parse(css);
 
   let hasReset = false;
+  let hasImport = false;
   const variables: ThemeVariable[] = [];
 
-  // @themeルールを探索
+  // @import "tailwindcss" をチェック
+  if (checkImport) {
+    root.walkAtRules('import', (atRule) => {
+      const importValue = atRule.params.replace(/["']/g, '');
+      if (importValue === 'tailwindcss') {
+        hasImport = true;
+      }
+    });
+  }
+
+  // @themeルールを探索（@theme と @theme default の両方）
   root.walkAtRules('theme', (atRule) => {
     atRule.walkDecls((decl) => {
       // --*: initial; の検出（リセット）
@@ -50,6 +64,7 @@ export async function parseThemeVariables(filePath: string): Promise<ParsedTheme
   return {
     filePath,
     hasReset,
+    hasImport,
     variables,
   };
 }

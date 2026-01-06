@@ -10,11 +10,12 @@ export interface ThemeVariable {
 
 export interface ParsedTheme {
   filePath: string;
-  hasReset: boolean;         // --*: initial が含まれるか
+  hasReset: boolean;          // --*: initial が含まれるか
+  hasImport: boolean;         // @import "tailwindcss" が含まれるか
   variables: ThemeVariable[]; // 抽出された変数
 }
 
-// :rootパーサー関連（ビルド後のCSS）
+// 変数整理用の型
 export interface Variable {
   name: string;
   value: string;
@@ -45,27 +46,6 @@ export interface OrganizedVariables {
   [namespace: string]: OrganizedVariable[];
 }
 
-// HTML生成関連
-export interface GeneratedHTML {
-  html: string;          // 生成されたHTML文字列
-  cssPath: string;       // 元のCSSファイルパス
-  variableCount: number; // 含まれる変数の数
-}
-
-// ビルド関連
-export interface BuildOptions {
-  htmlPath: string;      // 入力HTMLファイル
-  cssPath: string;       // 出力CSSファイル
-  timeout?: number;      // タイムアウト（ミリ秒）
-}
-
-export interface BuildResult {
-  success: boolean;
-  cssPath: string;       // 生成されたCSSのパス
-  output: string;        // CLIの出力
-  error?: string;        // エラーメッセージ
-}
-
 // CLI関連
 export interface CLIOptions {
   config: string;        // 単一のCSSファイルパス
@@ -92,20 +72,6 @@ export interface ErrorResponse {
   error: string;
 }
 
-// 統計情報
-export interface Statistics {
-  totalFiles: number;
-  totalBlocks: number;
-  totalVariables: number;
-  byNamespace: Record<string, number>;
-}
-
-// バリデーション
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-}
 
 // ネームスペース定数
 export const KNOWN_NAMESPACES = [

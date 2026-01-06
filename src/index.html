@@ -4,200 +4,132 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tailwind Variables Viewer</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      line-height: 1.5;
-      color: #1f2937;
-      padding: 2rem;
-    }
-
-    h1 {
-      margin-bottom: 1rem;
-      color: #111827;
-    }
-
-    #app {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 2rem;
-      color: #6b7280;
-    }
-
-    .error {
-      padding: 1rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 0.375rem;
-      color: #991b1b;
-    }
-
-    .namespace-section {
-      margin-bottom: 2rem;
-    }
-
-    .namespace-section h2 {
-      margin-bottom: 1rem;
-      text-transform: capitalize;
-      color: #374151;
-    }
-
-    .namespace-section .count {
-      color: #6b7280;
-      font-weight: normal;
-      font-size: 0.875rem;
-    }
-
-    .variables-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1rem;
-    }
-
-    .variable-card {
-      padding: 1rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.375rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .variable-name {
-      font-family: 'Monaco', 'Menlo', monospace;
-      font-size: 0.875rem;
-      color: #374151;
-      word-break: break-all;
-    }
-
-    .variable-value {
-      font-size: 0.75rem;
-      color: #6b7280;
-      word-break: break-all;
-    }
-
-    .variable-preview {
-      margin-top: 0.5rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.25rem;
-      overflow: hidden;
-    }
-
-    .color-swatch {
-      width: 100%;
-      height: 80px;
-    }
-
-    .size-preview {
-      padding: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .size-bar {
-      height: 40px;
-      background: #3b82f6;
-      border-radius: 0.25rem;
-      min-width: 2px;
-    }
-
-    .size-label {
-      font-size: 0.75rem;
-      color: #6b7280;
-      white-space: nowrap;
-    }
-
-    .font-preview {
-      padding: 1rem;
-      font-size: 1rem;
-      line-height: 1.5;
-    }
-  </style>
+  <link rel="stylesheet" href="/app.css">
 </head>
 <body>
   <div id="app">
-    <h1>Tailwind CSS v4 Theme Variables</h1>
-    <div class="loading">Loading variables...</div>
+    <header>
+      <h1>Tailwind CSS v4 Theme Variables</h1>
+      <input type="search" id="search" placeholder="Search variables..." class="search-bar">
+    </header>
+    <main id="variables">
+      <p class="loading">Loading variables...</p>
+    </main>
   </div>
 
   <script type="module">
-    const app = document.getElementById('app');
+    // Fetch and render variables
+    let allVariables = null;
 
-    // Detect variable type from value
-    function detectType(value) {
-      if (/oklch|rgb|hsl|#[0-9a-f]{3,8}/i.test(value)) return 'color';
-      if (/\d+(px|rem|em|vh|vw|%)/.test(value)) return 'size';
-      if (/["'].*["']/.test(value)) return 'font';
-      return 'other';
-    }
-
-    // Generate visual preview for variable
-    function generatePreview(variable) {
-      const type = detectType(variable.value);
-
-      if (type === 'color') {
-        return `<div class="variable-preview"><div class="color-swatch" style="background: ${variable.value}"></div></div>`;
-      }
-
-      if (type === 'size') {
-        return `<div class="variable-preview"><div class="size-preview"><div class="size-bar" style="width: ${variable.value}"></div><span class="size-label">${variable.value}</span></div></div>`;
-      }
-
-      if (type === 'font') {
-        const fontFamily = variable.value.replace(/['"]/g, '');
-        return `<div class="variable-preview"><div class="font-preview" style="font-family: ${fontFamily}">The quick brown fox jumps over the lazy dog</div></div>`;
-      }
-
-      return '';
-    }
-
-    // Fetch variables from API
     fetch('/api/variables.json')
-      .then(response => {
-        if (!response.ok) {
+      .then(res => {
+        if (!res.ok) {
           throw new Error('Failed to fetch variables');
         }
-        return response.json();
+        return res.json();
       })
       .then(variables => {
-        // Render variables
-        const html = Object.entries(variables)
-          .map(([namespace, vars]) => `
-            <div class="namespace-section">
-              <h2>${namespace} <span class="count">(${vars.length})</span></h2>
-              <div class="variables-grid">
-                ${vars.map(variable => `
-                  <div class="variable-card">
-                    <code class="variable-name">${variable.varName}</code>
-                    <span class="variable-value">${variable.value}</span>
-                    ${generatePreview(variable)}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `).join('');
-
-        app.innerHTML = `<h1>Tailwind CSS v4 Theme Variables</h1>${html}`;
+        allVariables = variables;
+        renderVariables(variables);
+        setupSearch();
+        setupCopyButtons();
       })
       .catch(error => {
-        app.innerHTML = `
-          <h1>Tailwind CSS v4 Theme Variables</h1>
+        document.getElementById('variables').innerHTML = `
           <div class="error">
-            <strong>Error:</strong> ${error.message}
+            <h2>Error</h2>
+            <p>${error.message}</p>
           </div>
         `;
       });
+
+    function renderVariables(variables) {
+      const container = document.getElementById('variables');
+
+      if (!variables || Object.keys(variables).length === 0) {
+        container.innerHTML = `
+          <div class="empty">
+            <h2>No variables found</h2>
+            <p>Make sure your CSS files contain @theme directives.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const html = Object.entries(variables).map(([namespace, vars]) => `
+        <section class="namespace-section">
+          <h2>${namespace} <span class="count">(${vars.length})</span></h2>
+          <div class="variables-grid">
+            ${vars.map(v => `
+              <div class="variable-card" data-var-name="${v.varName}">
+                ${renderPreview(v)}
+                <div class="variable-info">
+                  <code class="variable-name">${v.varName}</code>
+                  <span class="variable-value">${v.value}</span>
+                </div>
+                <button class="copy-btn" data-text="${v.varName}">Copy</button>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `).join('');
+
+      container.innerHTML = html;
+    }
+
+    function renderPreview(variable) {
+      if (variable.type === 'color') {
+        return `<div class="color-swatch" style="background: ${variable.value}"></div>`;
+      }
+      if (variable.type === 'size') {
+        return `<div class="size-bar" style="width: ${variable.value}"></div>`;
+      }
+      if (variable.type === 'font') {
+        return `<div class="font-sample" style="font-family: ${variable.value}">The quick brown fox</div>`;
+      }
+      return '';
+    }
+
+    function setupSearch() {
+      const search = document.getElementById('search');
+      search.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.variable-card');
+
+        cards.forEach(card => {
+          const name = card.dataset.varName.toLowerCase();
+          card.style.display = name.includes(query) ? '' : 'none';
+        });
+
+        // Hide empty namespaces
+        const sections = document.querySelectorAll('.namespace-section');
+        sections.forEach(section => {
+          const visibleCards = section.querySelectorAll('.variable-card[style=""], .variable-card:not([style*="display: none"])');
+          section.style.display = visibleCards.length > 0 ? '' : 'none';
+        });
+      });
+    }
+
+    function setupCopyButtons() {
+      document.getElementById('variables').addEventListener('click', async (e) => {
+        if (e.target.classList.contains('copy-btn')) {
+          const btn = e.target;
+          const text = btn.dataset.text;
+
+          try {
+            await navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+              btn.textContent = 'Copy';
+              btn.classList.remove('copied');
+            }, 2000);
+          } catch (err) {
+            console.error('Failed to copy:', err);
+          }
+        }
+      });
+    }
   </script>
 </body>
 </html>
