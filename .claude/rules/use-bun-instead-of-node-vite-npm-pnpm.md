@@ -1,7 +1,3 @@
----
-paths: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
----
-
 # Bunの使用を優先
 
 このプロジェクトでは、開発環境としてBunを使用します。
@@ -35,7 +31,7 @@ const contents = await file.text();
 
 ### Viteは使用する
 
-フロントエンド（Svelte）のビルドとpreview serverには**Viteを使用**します。
+フロントエンドのビルドとpreview serverには**Viteを使用**します。
 これはプロジェクトの設計方針であり、`Bun.serve()`は使用しません。
 
 - `bun run dev`: Vite開発サーバー

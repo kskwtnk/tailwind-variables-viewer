@@ -31,8 +31,6 @@ npx tailwind-variables-viewer -c ./src/app.css
 
 ## 使い方
 
-**重要**: TailwindのエントリーポイントとなるCSSファイルを指定してください。ツールが自動的にビルドを実行します。
-
 ### 基本的な使い方
 
 ```bash
