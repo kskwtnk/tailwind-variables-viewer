@@ -136,8 +136,95 @@ try {
 - [ ] CSSコメント処理
 - [ ] 複雑な値（calc, var参照）
 
+## リセットパターン対応（ADR-003参照）
+
+Tailwind CSS v4では、`@theme`ブロック内で`--*: initial;`を使用してリセットを指定できます。
+これらのパターンは通常のCSS変数として解析されますが、CLI側で特別に処理されます。
+
+### サポートされるリセットパターン
+
+```css
+@theme {
+  /* グローバルリセット - すべての変数を除外 */
+  --*: initial;
+
+  /* ネームスペース別リセット - 特定のプレフィックス配下を除外 */
+  --color-*: initial;     /* --color-* で始まる変数を除外 */
+  --spacing-*: initial;   /* --spacing-* で始まる変数を除外 */
+
+  /* 個別リセット - 特定の変数のみ除外 */
+  --color-primary: initial;
+}
+```
+
+### パーサー側での処理
+
+パーサー自体は、`initial`値を持つ変数を通常と同じように抽出します：
+
+```typescript
+// パーサーの出力例
+{
+  name: '--color-*',
+  value: 'initial',
+  raw: '--color-*: initial;'
+}
+```
+
+### CLI側での処理（cli/index.ts）
+
+リセットパターンはCLI側の`applyResets()`関数で解釈されます：
+
+```typescript
+function applyResets(
+  defaultVars: ThemeVariable[],
+  userVars: ThemeVariable[]
+): ThemeVariable[] {
+  const resetPatterns = userVars
+    .filter(v => v.value.trim() === 'initial')
+    .map(v => v.name);
+
+  if (resetPatterns.length === 0) {
+    return defaultVars;
+  }
+
+  return defaultVars.filter(v => {
+    return !resetPatterns.some(pattern => {
+      if (pattern.endsWith('-*')) {
+        // ワイルドカードパターン: --color-* → 全color変数を除外
+        const prefix = pattern.slice(0, -2);
+        return v.name.startsWith(prefix);
+      }
+      // 完全一致: --color-primary → その変数のみ除外
+      return v.name === pattern;
+    });
+  });
+}
+```
+
+### 実装例
+
+```typescript
+// デフォルト変数から 'initial' パターンを適用
+const defaultVars = [
+  { name: '--color-red-500', value: 'oklch(...)' },
+  { name: '--color-blue-500', value: 'oklch(...)' },
+  { name: '--spacing-4', value: '1rem' }
+];
+
+const userVars = [
+  { name: '--color-*', value: 'initial' },  // すべてのcolor変数を除外
+  { name: '--spacing-custom', value: '2rem' }
+];
+
+const result = applyResets(defaultVars, userVars);
+// 結果: [ { name: '--spacing-4', value: '1rem' } ]
+// (spacing-4は残る、colorはすべて除外、spacing-customは後でマージ)
+```
+
 ## パフォーマンス
 
 - ファイル読み込みは非同期
 - 大きなCSSファイルでもPostCSSは効率的
 - 解析結果は一度だけ実行（キャッシュは呼び出し側で管理）
+- リセットパターンのマッチングはO(n*m)（nはデフォルト変数数、mはリセットパターン数）
+  - 実際には十分高速（375変数 × 数パターン = 数ms）

@@ -347,7 +347,7 @@ curl http://localhost:3000/api/variables
 
 ---
 
-## Phase 4: フロントエンド実装
+## Phase 4: フロントエンド実装 ✅ **完了**
 
 ### 目標
 変数を表示する動作するUI
@@ -382,11 +382,13 @@ curl http://localhost:3000/api/variables
    - 検索フィルタリング
    - クリップボードコピー機能
    - グローバルスタイル読み込み
+   - 変数タイプ別プレビュー（色、サイズ、フォント）
 
 3. **src/app.css作成**
    - グローバルスタイル
    - リセットCSS
    - 変数カード、検索バーなどのスタイル
+   - レスポンシブレイアウト
 
 4. **package.jsonスクリプト更新**
    ```json
@@ -407,6 +409,7 @@ curl http://localhost:3000/api/variables
 - `addEventListener` でイベント処理
 - 検索: `input`イベントで絞り込み
 - コピー: `click`イベントでクリップボードコピー
+- タイプ別プレビュー表示
 
 ### 成果物
 - vite.config.ts（Svelteプラグイン削除）
@@ -419,14 +422,24 @@ curl http://localhost:3000/api/variables
 - src/main.ts
 - src/vite-env.d.ts
 
-### 確認
+### 確認 ✅
 ```bash
 bun run build
-node dist-cli/cli/index.js -c test/scenarios/3-extend-defaults.css
-# ブラウザで http://localhost:3000 を開く
-# 変数が表示されることを確認
-# 検索機能が動作することを確認
-# コピー機能が動作することを確認
+# Scenario 1: デフォルトのみ
+node dist-cli/cli/index.js -c test/scenarios/1-default-only.css -o
+# → 375個のデフォルト変数を表示
+
+# Scenario 2: 全リセット
+node dist-cli/cli/index.js -c test/scenarios/2-reset-all.css -o
+# → 警告表示（変数なし）
+
+# Scenario 3: デフォルト + カスタム
+node dist-cli/cli/index.js -c test/scenarios/3-extend-defaults.css -o
+# → 380個の変数を表示（375 default + 5 custom）
+
+# Scenario 4: リセット + カスタムのみ
+node dist-cli/cli/index.js -c test/scenarios/4-reset-and-custom.css -o
+# → 6個のカスタム変数のみ表示
 ```
 
 ---
@@ -594,6 +607,6 @@ npx tailwind-variables-viewer@latest -c test/fixtures/basic.css -o
 - [x] Phase 1: プロジェクトセットアップ ✅ **完了**
 - [x] Phase 2: CSSパーサー実装 ✅ **完了**
 - [x] Phase 3: サーバー・CLI実装 ✅ **完了**
-- [ ] Phase 4: フロントエンド実装 ← **次はここから**
-- [ ] Phase 5: 統合とテスト
+- [x] Phase 4: フロントエンド実装 ✅ **完了**
+- [ ] Phase 5: 統合とテスト ← **次はここから**
 - [ ] Phase 6: 公開準備
