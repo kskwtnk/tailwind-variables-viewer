@@ -20,13 +20,12 @@
     "README.md"
   ],
   "scripts": {
-    "build:cli": "tsc",
-    "build": "bun scripts/build.ts",
+    "build": "bun scripts/build.ts && tsc",
     "check": "biome check --write .",
-    "dev": "bun run build && bun run build:cli && node dist/cli/index.js -c dev/sample.css -o",
+    "dev": "bun scripts/dev.ts",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "prepublishOnly": "bun run build && bun run build:cli",
+    "prepublishOnly": "bun run build",
     "test": "bun test"
   },
   "keywords": [
@@ -40,6 +39,7 @@
   "author": "Keisuke Watanuki (kskwtnk)",
   "license": "MIT",
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
     "chokidar": "^5.0.0",
     "commander": "^14.0.2",
     "picocolors": "^1.1.1",

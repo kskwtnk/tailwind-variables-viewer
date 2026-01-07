@@ -61,8 +61,7 @@ async function runViewer(options: {
 	const { organized, totalVariables } = await parseAndOrganize(options.config);
 
 	// 3. Write variables as static JSON file
-	// Use CLI script location, not current working directory
-	// __dirname = dist/cli, so ../ui = dist/ui
+	// Use dist directory (built UI)
 	const distUiDir = resolve(__dirname, "..", "ui");
 	const apiDir = resolve(distUiDir, "api");
 	await mkdir(apiDir, { recursive: true });
@@ -74,12 +73,17 @@ async function runViewer(options: {
 
 	// 4. Start Vite dev server with HMR
 	console.log(pc.cyan("\nStarting server..."));
+
+	// Import Tailwind CSS Vite plugin
+	const { default: tailwindcss } = await import("@tailwindcss/vite");
+
 	const server = await createServer({
 		configFile: false,
 		plugins: [
+			tailwindcss(),
 			{
 				async configureServer(server) {
-					// Watch CSS file for changes and trigger full reload
+					// Watch user's CSS file for changes and trigger full reload
 					const chokidar = await import("chokidar");
 					const cssFilePath = resolve(options.config[0]);
 					const watcher = chokidar.watch(cssFilePath, {

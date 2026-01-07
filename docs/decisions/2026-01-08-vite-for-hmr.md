@@ -157,22 +157,47 @@ const distUiDir = resolve(__dirname, "..", "ui");
 - `__dirname`はスクリプト自身の場所基準（パッケージ内）
 - 他のプロジェクトから`node ../tailwind-variables-viewer/dist/cli/index.js`で実行可能
 
-### 5. 開発スクリプトの簡素化
+### 5. 開発モードと本番モードの分離
 
-`scripts/dev.ts`を削除し、`package.json`で直接実行:
+**開発モード（`bun run dev`）**:
+- `scripts/dev.ts`が`src/ui`を直接Viteで配信
+- `vite.config.ts`で`root: "src/ui"`を設定
+- ViteのHMRが`app.css`と`app.ts`を自動的に監視
+- 変数データ（`src/ui/api/variables.json`）は起動時に生成
+
+```typescript
+// scripts/dev.ts
+const server = await createServer({
+  plugins: [
+    {
+      name: "watch-sample-css",
+      async configureServer(server) {
+        // dev/sample.css を監視して変数を再生成
+      },
+    },
+  ],
+  server: { open: true },
+});
+```
+
+**本番モード（CLIツール実行）**:
+- `dist/ui`（ビルド済み静的ファイル）を配信
+- Bun.buildでJSとCSSをバンドル
+- ユーザーのCSSファイルを監視してブラウザリロード
 
 ```json
 {
   "scripts": {
-    "dev": "bun run build && bun run build:cli && node dist/cli/index.js -c dev/sample.css -o"
+    "dev": "bun scripts/dev.ts",
+    "build": "bun scripts/build.ts && tsc"
   }
 }
 ```
 
-**理由**:
-- Vite開発サーバーが全てのホットリロードを担当
-- `scripts/dev.ts`の複雑なwatchロジックが不要に
-- シンプルで理解しやすい構成
+**分離のメリット**:
+- 開発時: `src/ui`を直接配信してHMRフル活用
+- 本番時: `dist/ui`を配信してパフォーマンス最適化
+- CSSインポート（`import "./app.css"`）がViteで自動処理
 
 ## メリット
 
@@ -223,6 +248,53 @@ const distUiDir = resolve(__dirname, "..", "ui");
 - 開発速度が低下
 - ユーザーにとっても不便
 
+## 追加の最適化（2026年1月8日更新）
+
+### CSS import問題の解決
+
+当初、HTMLで`<link rel="stylesheet" href="/app.css">`として読み込んでいたが、ViteのHMRが動作しなかった。
+
+**原因**: HTMLの`<link>`タグで読み込んだCSSは、Viteのモジュールグラフに含まれないため、HMRの対象外。
+
+**解決策**: JavaScriptから`import "./app.css"`として読み込む。
+
+```typescript
+// src/ui/app.ts
+import "./app.css";
+import type { OrganizedVariable, OrganizedVariables } from "../core/types.js";
+
+// ... rest of code
+```
+
+これにより、Viteが`app.css`を依存関係として認識し、変更時に自動的にHMRが動作する。
+
+### .gitignoreの追加
+
+開発時に生成される`src/ui/api/variables.json`をgit管理から除外:
+
+```gitignore
+# generated during dev
+src/ui/api/
+```
+
+### ビルドスクリプトの統合
+
+`build:cli`と`build`を統合して、`bun run build`だけで全てビルド:
+
+```json
+{
+  "scripts": {
+    "build": "bun scripts/build.ts && tsc",
+    "prepublishOnly": "bun run build"
+  }
+}
+```
+
+**理由**:
+- `build`コマンド単独では不完全だった
+- `prepublishOnly`で両方実行していたため、`build`に統合
+- より直感的で分かりやすい
+
 ## 結論
 
 依存関係は増加するが、**ホットリロードは必須機能**と判断。
@@ -233,6 +305,8 @@ Viteの開発サーバーを使うことで:
 - 優れた開発体験
 
 を実現できる。SSEの自作実装は技術的に困難であり、Viteという成熟したツールを活用する方が合理的。
+
+開発モードと本番モードを分離することで、開発時はViteのHMRをフル活用し、本番時はビルド済み静的ファイルを配信するという、両方の利点を最大化できた。
 
 ## 教訓
 

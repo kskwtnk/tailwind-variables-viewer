@@ -6,6 +6,9 @@ dist/
 public/
 *.tgz
 
+# generated during dev
+src/ui/api/
+
 # temporary build files
 .tmp/
 

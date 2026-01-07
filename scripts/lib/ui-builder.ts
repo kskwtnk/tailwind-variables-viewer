@@ -3,7 +3,7 @@
  * Used by both build-ui.ts and dev-watch.ts
  */
 
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 
 export interface BuildUIOptions {
@@ -41,37 +41,48 @@ export async function buildUI(options: BuildUIOptions): Promise<boolean> {
 			console.log(`✓ Built ${result.outputs.length} file(s)`);
 		}
 
-		// Get the built JS filename
+		// Get the built filenames
 		const jsOutput = result.outputs.find(
 			(o) => o.path.endsWith(".js") && !o.path.endsWith(".map"),
 		);
+		const cssOutput = result.outputs.find(
+			(o) => o.path.endsWith(".css") && !o.path.endsWith(".map"),
+		);
+
 		if (!jsOutput) {
 			console.error("No JS output found");
 			return false;
 		}
+
 		const jsFilename = basename(jsOutput.path);
+		const cssFilename = cssOutput ? basename(cssOutput.path) : null;
+
 		if (verbose) {
 			console.log(`✓ Built JS: ${jsFilename}`);
+			if (cssFilename) {
+				console.log(`✓ Built CSS: ${cssFilename}`);
+			}
 		}
 
 		// Copy static files
 		const distUiDir = resolve(projectRoot, "dist/ui");
 		mkdirSync(distUiDir, { recursive: true });
 
-		// Copy and update HTML with correct JS path
+		// Copy and update HTML with correct JS/CSS paths
 		let html = readFileSync(resolve(projectRoot, "src/ui/index.html"), "utf-8");
 		html = html.replace("/app.ts", `/assets/${jsFilename}`);
+
+		// Add CSS link if CSS was built
+		if (cssFilename) {
+			html = html.replace(
+				"</head>",
+				`  <link rel="stylesheet" href="/assets/${cssFilename}">\n</head>`,
+			);
+		}
+
 		writeFileSync(resolve(distUiDir, "index.html"), html);
 		if (verbose) {
 			console.log("✓ Copied and updated index.html");
-		}
-
-		copyFileSync(
-			resolve(projectRoot, "src/ui/app.css"),
-			resolve(distUiDir, "app.css"),
-		);
-		if (verbose) {
-			console.log("✓ Copied app.css");
 		}
 
 		// Create API directory

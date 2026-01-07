@@ -1,3 +1,4 @@
+import "./app.css";
 import type { OrganizedVariable, OrganizedVariables } from "../core/types.js";
 
 // Fetch and render variables
