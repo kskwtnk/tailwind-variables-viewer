@@ -8,17 +8,15 @@
 @import "tailwindcss";
 
 @theme {
-  --*: initial;
+	--color-primary: oklch(0.5 0.2 240);
+	--color-secondary: oklch(0.6 0.15 180);
 
-  /* カスタムカラーのみ */
-  --color-primary: oklch(0.5 0.2 240);
-  --color-secondary: oklch(0.6 0.15 180);
+	/* カスタムスペーシングのみ */
+	--spacing-sm: 0.5rem;
+	--spacing-md: 1rem;
+	--spacing-lg: 2rem;
 
-  /* カスタムスペーシングのみ */
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 2rem;
-
-  /* カスタムフォントのみ */
-  --font-main: "Inter", system-ui, sans-serif;
+	/* カスタムフォントのみ */
+	--font-main: "Inter", system-ui, sans-serif;
+	--*: initial;
 }

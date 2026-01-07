@@ -8,5 +8,5 @@
 @import "tailwindcss";
 
 @theme {
-  --*: initial;
+	--*: initial;
 }
