@@ -20,10 +20,11 @@
     "README.md"
   ],
   "scripts": {
-    "dev": "bun scripts/build-ui.ts && bun run build:cli",
-    "build": "bun scripts/build-ui.ts",
     "build:cli": "tsc",
-    "prepublishOnly": "bun run dev"
+    "build": "bun scripts/build-ui.ts",
+    "dev": "bun scripts/build-ui.ts && bun run build:cli",
+    "prepublishOnly": "bun run dev",
+    "test": "bun test"
   },
   "keywords": [
     "tailwindcss",

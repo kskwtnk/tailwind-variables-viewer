@@ -17,9 +17,6 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "types": [
-      "node"
-    ]
   },
   "include": [
     "src/cli/**/*",
@@ -29,6 +26,7 @@
     "node_modules",
     "dist",
     "public",
-    "src/ui"
+    "src/ui",
+    "test"
   ]
 }
