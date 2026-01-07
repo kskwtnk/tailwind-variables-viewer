@@ -10,37 +10,49 @@ tailwind-variables-viewer/
 ├── CLAUDE.md
 ├── .claude/
 │   └── rules/
-├── docs/                    # プロジェクトドキュメント
+├── docs/
 │   ├── architecture.md
 │   ├── data-structures.md
-│   └── decisions/          # ADR
-├── cli/
-│   └── index.ts            # CLIエントリーポイント
-├── lib/
-│   ├── theme-parser.ts     # @themeディレクティブから変数抽出
-│   ├── extractor.ts        # 変数整理
-│   ├── server.ts           # Viteプレビューサーバー
-│   └── types.ts            # 型定義
+│   └── decisions/            # ADR
+├── scripts/
+│   ├── build.ts              # UIビルドスクリプト
+│   ├── dev.ts                # 開発サーバー起動
+│   └── lib/
+│       └── ui-builder.ts     # Bun.buildラッパー
 ├── src/
-│   ├── index.html          # フロントエンド（Vanilla JS）
-│   └── app.css             # グローバルスタイル
-└── dist/                    # ビルド済みフロントエンド
+│   ├── cli/
+│   │   └── index.ts         # CLIエントリーポイント + Vite dev server
+│   ├── core/
+│   │   ├── theme-parser.ts  # @themeディレクティブから変数抽出
+│   │   ├── extractor.ts     # 変数整理
+│   │   └── types.ts         # 型定義
+│   └── ui/
+│       ├── index.html        # フロントエンド（Vanilla JS）
+│       ├── app.ts            # フロントエンドロジック
+│       └── app.css           # グローバルスタイル
+└── dist/                      # ビルド済みファイル
+    ├── cli/                   # tscでビルドされたCLI
+    ├── core/                  # tscでビルドされたコア
+    └── ui/                    # Bun.buildでビルドされたUI
 ```
 
 ## 技術スタック
 
-### コア依存関係（5個）
+### コア依存関係（6個）
 
 - `commander` - CLI引数パース
 - `postcss` - CSS AST解析（@theme抽出用）
-- `vite` - ビルド＆開発サーバー（preview機能を活用）
+- `vite` - 開発サーバー（HMR対応）
+- `@tailwindcss/vite` - Tailwind CSS v4 Viteプラグイン
+- `chokidar` - ファイル監視（ユーザーのCSSファイル変更検知）
 - `picocolors` - ターミナル出力の色付け（chalkの軽量代替）
-- `open` - ブラウザ自動起動
 
-### 開発依存（2個）
+### 開発依存（4個）
 
 - `typescript` - TypeScript本体
 - `@types/node` - Node.js型定義
+- `@types/bun` - Bun型定義
+- `@biomejs/biome` - Linter & Formatter
 
 ### 言語・フレームワーク方針
 
@@ -54,7 +66,7 @@ CLI起動（ユーザーのTailwind CSSファイルを指定）
   ↓
 CSSファイル読み込み（@import "tailwindcss" + @theme）
   ↓
-PostCSS解析 (theme-parser.ts)
+PostCSS解析 (src/core/theme-parser.ts)
   ├── Tailwindデフォルト変数読み込み (node_modules/tailwindcss/theme.css)
   └── ユーザーの@themeブロックから変数抽出
   ↓
@@ -62,19 +74,34 @@ PostCSS解析 (theme-parser.ts)
   ↓
 マージ・重複排除
   ↓
-変数整理 (extractor.ts)
+変数整理 (src/core/extractor.ts)
   ネームスペース別に分類
   ↓
-Vite preview server起動 (server.ts)
+variables.jsonを静的ファイルとして生成 (dist/ui/api/variables.json)
   ↓
-静的ファイル配信 (dist/)
-  index.html + app.css
+Vite dev server起動 (src/cli/index.ts)
+  ├── Tailwind CSS Viteプラグイン適用
+  ├── ビルド済みUI配信 (dist/ui/)
+  └── chokidarでCSSファイル監視
+  ↓
+ブラウザでUI表示
+  ├── index.html読み込み
+  ├── app.ts実行 (Vite HMR対応)
+  └── app.css適用 (Vite HMR対応)
   ↓
 Vanilla JSでAPI取得とレンダリング
-  fetch('/api/variables')
+  fetch('/api/variables.json')
   ↓
 ユーザーインタラクション
   検索フィルタリング、クリップボードコピー
+  ↓
+CSSファイル変更時
+  ↓
+chokidar検知 → 変数再解析 → variables.json更新
+  ↓
+Vite WebSocketで full-reload 送信
+  ↓
+ブラウザ自動リロード
 ```
 
 ## 重要な設計思想
@@ -122,7 +149,34 @@ Tailwind v4の仕様に準拠:
 
 ## パフォーマンス考慮
 
-- CSS解析結果をメモリキャッシュ
-- 静的ファイルはビルド済み配信
-- 不要な再解析を避ける
-- ポート検索は効率的な範囲で実行
+- 静的ファイル（variables.json）は変更時のみ再生成
+- UIはビルド済みファイルを配信（dist/ui/）
+- Vite HMRで高速なフロントエンド開発体験
+- chokidarのdebounce設定で不要な再解析を抑制
+
+## ビルドとデプロイ
+
+### ビルドプロセス
+
+```bash
+bun run build  # = bun scripts/build.ts && tsc
+```
+
+1. **Bun.build** (`scripts/build.ts`)
+   - `src/ui/` をバンドル → `dist/ui/`
+   - TypeScriptコンパイル、minify、バンドル
+   - CSSもバンドルに含める
+2. **tsc** (TypeScript Compiler)
+   - `src/cli/` と `src/core/` をコンパイル
+   - `dist/cli/` と `dist/core/` に出力
+   - 型チェックとCommonJS/ESM変換
+
+### 開発モード
+
+```bash
+bun run dev  # scripts/dev.ts
+```
+
+- `src/ui/` をViteで直接配信
+- HMRフル活用
+- `dev/sample.css` を監視してテスト用変数を生成

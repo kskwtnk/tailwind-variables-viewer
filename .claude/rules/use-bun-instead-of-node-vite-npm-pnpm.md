@@ -33,24 +33,44 @@ const contents = await file.text();
 
 フロントエンドのビルドには**Bun.build**を使用します（`scripts/lib/ui-builder.ts`）。
 
-- `bun run dev`: 開発モード（watch + 自動リビルド + サーバー起動）
-- `bun run build`: プロダクションビルド（Bun.buildでフロントエンド生成）
+- `bun run dev`: 開発モード（Vite dev server + HMR）
+- `bun run build`: プロダクションビルド（Bun.buildでUIバンドル + tscでCLIコンパイル）
 
-ViteからBun.buildに移行した理由は `docs/decisions/2026-01-07-vite-to-bun-build.md` を参照。
+技術選定の経緯は[@docs/decisions/2026-01-08-vite-for-hmr.md](../../docs/decisions/2026-01-08-vite-for-hmr.md)を参照。
 
 ### サーバー
 
-preview serverには**Node.js標準のhttp.createServer**を使用します（`src/core/server.ts`）。
-これはプロジェクトの設計方針であり、`Bun.serve()`は使用しません。
+本番環境（CLIツール実行時）では**Vite dev server**を使用します（[@src/cli/index.ts](../../src/cli/index.ts)）。
 
-理由：
+```typescript
+import { createServer } from "vite";
+
+const server = await createServer({
+  configFile: false,
+  root: distUiDir,
+  plugins: [tailwindcss(), watchCssPlugin],
+  server: { open: options.open, port: options.port },
+});
+```
+
+**Viteを使用する理由**:
+- HMR（ホットモジュールリロード）による優れた開発体験
+- chokidarによるCSSファイル監視と自動リロード
+- WebSocketベースの安定したブラウザ通信
+- Node.js互換（npmパッケージとして公開可能）
+
+**`Bun.serve()`は使用しません**:
 - Node.jsユーザーとの互換性を保つため
 - npmパッケージとして公開するため
 
 ### TypeScriptコンパイル
 
-CLIコードのコンパイルには**tsc**を使用します（Bunの制約回避のため）。
+CLIとコアコードのコンパイルには**tsc**を使用します（Node.js互換性のため）。
 
 ```bash
-bun run build:cli  # tscでCLIをコンパイル
+bun run build  # Bun.build（UI） + tsc（CLI/core）
 ```
+
+ビルドプロセス:
+1. `bun scripts/build.ts` - UIをBun.buildでバンドル
+2. `tsc` - CLIとコアをCommonJS/ESMに変換

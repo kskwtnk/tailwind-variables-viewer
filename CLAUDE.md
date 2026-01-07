@@ -13,17 +13,6 @@
 - 基本機能に集中（スタイリングはユーザー側で実装）
 - CSSファイルを直接パースして@theme変数を抽出
 
-### 技術スタック
-
-- **言語**: TypeScript
-- **ランタイム**: Bun（開発環境）/ Node.js（本番環境）
-- **CLIツール**: Commander
-- **パーサー**: PostCSS
-- **ビルドツール**: Bun.build
-- **サーバー**: Node.js http.createServer
-- **フロントエンド**: Vanilla JS
-- **Linter/Formatter**: Biome
-
 ## ドキュメント構成
 
 ### プロジェクトドキュメント（`docs/`）

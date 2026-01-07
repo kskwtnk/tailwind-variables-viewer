@@ -1,4 +1,4 @@
-// lib/types.ts
+// このファイルを編集した際は @docs/data-structures.md に齟齬が生まれていないか確認すること
 
 // @themeパーサー関連
 export interface ThemeVariable {

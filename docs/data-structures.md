@@ -1,6 +1,6 @@
 # データ構造仕様
 
-プロジェクト全体で使用される主要なデータ構造は **[@lib/types.ts](../lib/types.ts)** で定義されています。
+プロジェクト全体で使用される主要なデータ構造は **[@src/core/types.ts](../src/core/types.ts)** で定義されています。
 
 ## 主要な型
 
@@ -20,11 +20,6 @@
 - `OrganizedVariables` - ネームスペース別に整理された変数
 - `VariableType` - 変数のタイプ（color/size/font/reference/other）
 
-### サーバー関連
-
-- `ServerOptions` - サーバー起動オプション
-- `ServerResult` - サーバー起動結果
-
 ### その他
 
 - `KNOWN_NAMESPACES` - Tailwind v4の標準ネームスペース定数
@@ -33,15 +28,21 @@
 ## データフロー
 
 ```
-CLI起動
+CLI起動 (src/cli/index.ts)
   ↓
-parseThemeVariables() → ParsedTheme
+parseThemeVariables() → ParsedTheme (src/core/theme-parser.ts)
   ↓
 デフォルト変数とマージ → ThemeVariable[]
   ↓
 ParsedCSS形式に変換
   ↓
-organizeVariables() → OrganizedVariables
+organizeVariables() → OrganizedVariables (src/core/extractor.ts)
   ↓
-startServer() → ブラウザで表示
+variables.jsonとして保存 (dist/ui/api/variables.json)
+  ↓
+Vite dev server起動 → ブラウザで表示
+  ↓
+フロントエンド (src/ui/app.ts)
+  ↓
+fetch('/api/variables.json') → 表示
 ```
