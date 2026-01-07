@@ -21,9 +21,9 @@
   ],
   "scripts": {
     "build:cli": "tsc",
-    "build": "bun scripts/build-ui.ts",
-    "dev": "bun scripts/build-ui.ts && bun run build:cli",
-    "prepublishOnly": "bun run dev",
+    "build": "bun scripts/build.ts",
+    "dev": "bun scripts/dev.ts",
+    "prepublishOnly": "bun run build && bun run build:cli",
     "test": "bun test"
   },
   "keywords": [

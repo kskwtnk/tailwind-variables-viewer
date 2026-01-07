@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  /* Custom brand colors */
+  --color-brand-primary: oklch(0.65 0.20 200);
+  --color-brand-secondary: oklch(0.75 0.15 280);
+  --color-brand-accent: oklch(0.60 0.25 150);
+
+  /* Custom spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-custom: 2.5rem;
+  --spacing-section: 5rem;
+
+  /* Custom fonts */
+  --font-display: "Playfair Display", serif;
+  --font-mono-custom: "Fira Code", monospace;
+
+  /* Custom sizing */
+  --width-container: 1280px;
+  --height-hero: 60vh;
+
+  /* Variable references */
+  --color-link: var(--color-brand-primary);
+  --color-link-hover: var(--color-brand-accent);
+
+  /* Complex values */
+  --spacing-dynamic: calc(100vw / 12);
+  --shadow-custom: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
