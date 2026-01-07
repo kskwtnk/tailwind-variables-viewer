@@ -11,8 +11,6 @@ fetch("/api/variables.json")
 	})
 	.then((variables) => {
 		renderVariables(variables);
-		setupSearch();
-		setupCopyButtons();
 	})
 	.catch((error) => {
 		const errorMessage =
@@ -57,7 +55,6 @@ function renderVariables(variables: OrganizedVariables): void {
               <code class="variable-name">${v.varName}</code>
               <span class="variable-value">${v.value}</span>
             </div>
-            <button class="copy-btn" data-text="${v.varName}">Copy</button>
           </div>
         `,
 					)
@@ -85,60 +82,4 @@ function renderPreview(variable: OrganizedVariable): string {
 		return `<div class="font-sample" style="font-family: ${displayValue}">The quick brown fox</div>`;
 	}
 	return "";
-}
-
-function setupSearch(): void {
-	const search = document.getElementById("search") as HTMLInputElement;
-
-	search.addEventListener("input", (e) => {
-		const target = e.target as HTMLInputElement;
-		const query = target.value.toLowerCase();
-		filterVariables(query);
-	});
-}
-
-function filterVariables(query: string): void {
-	const lowerQuery = query.toLowerCase();
-	const cards = document.querySelectorAll(".variable-card");
-
-	cards.forEach((card) => {
-		const htmlCard = card as HTMLElement;
-		const name = htmlCard.dataset.varName?.toLowerCase() || "";
-		htmlCard.style.display = name.includes(lowerQuery) ? "" : "none";
-	});
-
-	// Hide empty namespaces
-	const sections = document.querySelectorAll(".namespace-section");
-	sections.forEach((section) => {
-		const htmlSection = section as HTMLElement;
-		const visibleCards = section.querySelectorAll(
-			'.variable-card[style=""], .variable-card:not([style*="display: none"])',
-		);
-		htmlSection.style.display = visibleCards.length > 0 ? "" : "none";
-	});
-}
-
-function setupCopyButtons(): void {
-	const container = document.getElementById("variables");
-	if (!container) return;
-
-	container.addEventListener("click", async (e) => {
-		const target = e.target as HTMLElement;
-		if (target.classList.contains("copy-btn")) {
-			const btn = target as HTMLButtonElement;
-			const text = btn.dataset.text || "";
-
-			try {
-				await navigator.clipboard.writeText(text);
-				btn.textContent = "Copied!";
-				btn.classList.add("copied");
-				setTimeout(() => {
-					btn.textContent = "Copy";
-					btn.classList.remove("copied");
-				}, 2000);
-			} catch (err) {
-				console.error("Failed to copy:", err);
-			}
-		}
-	});
 }
