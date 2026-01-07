@@ -49,7 +49,7 @@ export interface ServerOptions {
 }
 
 export interface ServerResult {
-  server: any; // Vite preview server
+  server: any; // Node.js http.Server
   port: number;
   url: string;
 }

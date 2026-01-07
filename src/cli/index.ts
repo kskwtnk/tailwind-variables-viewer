@@ -124,9 +124,9 @@ async function runViewer(options: { config: string[]; port: number; open: boolea
 
   // Graceful shutdown
   process.on('SIGINT', () => {
-    console.log(pc.yellow('\nShutting down...'));
-    server.httpServer?.close(() => {
-      console.log(pc.green('Server closed'));
+    console.log(pc.yellow('\n\nShutting down...'));
+    server.close(() => {
+      console.log(pc.green('✓ Server closed'));
       process.exit(0);
     });
   });
