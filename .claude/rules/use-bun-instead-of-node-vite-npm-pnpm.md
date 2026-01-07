@@ -29,18 +29,27 @@ const contents = await file.text();
 
 ## このプロジェクトでの注意点
 
-### Viteは使用する
+### フロントエンドビルド
 
-フロントエンドのビルドとpreview serverには**Viteを使用**します。
+フロントエンドのビルドには**Bun.build**を使用します（`scripts/lib/ui-builder.ts`）。
+
+- `bun run dev`: 開発モード（watch + 自動リビルド + サーバー起動）
+- `bun run build`: プロダクションビルド（Bun.buildでフロントエンド生成）
+
+ViteからBun.buildに移行した理由は `docs/decisions/2026-01-07-vite-to-bun-build.md` を参照。
+
+### サーバー
+
+preview serverには**Node.js標準のhttp.createServer**を使用します（`src/core/server.ts`）。
 これはプロジェクトの設計方針であり、`Bun.serve()`は使用しません。
 
-- `bun run dev`: Vite開発サーバー
-- `bun run build`: Viteでフロントエンドビルド
-- `bun run preview`: Vite preview server
+理由：
+- Node.jsユーザーとの互換性を保つため
+- npmパッケージとして公開するため
 
 ### TypeScriptコンパイル
 
-CLIコードのコンパイルには`tsc`を使用します（Bunの制約回避のため）。
+CLIコードのコンパイルには**tsc**を使用します（Bunの制約回避のため）。
 
 ```bash
 bun run build:cli  # tscでCLIをコンパイル

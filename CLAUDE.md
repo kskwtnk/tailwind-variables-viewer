@@ -16,10 +16,13 @@
 ### 技術スタック
 
 - **言語**: TypeScript
+- **ランタイム**: Bun（開発環境）/ Node.js（本番環境）
 - **CLIツール**: Commander
 - **パーサー**: PostCSS
-- **サーバー**: Vite preview server
+- **ビルドツール**: Bun.build
+- **サーバー**: Node.js http.createServer
 - **フロントエンド**: Vanilla JS
+- **Linter/Formatter**: Biome
 
 ## ドキュメント構成
 
