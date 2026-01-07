@@ -88,12 +88,33 @@ function resolveReference(
 
 /**
  * 変数リストをソート
- * spacing: 数値順、その他: アルファベット順
+ * color: 色名でグループ化 → 数値順（theme.cssの定義順を維持）
+ * spacing: 数値順
+ * その他: アルファベット順
  */
 function sortVariables(
 	variables: OrganizedVariable[],
 	namespace: string,
 ): OrganizedVariable[] {
+	if (namespace === "color") {
+		// カラー: 色名グループ内のみ数値順にソート、色名間の順序は維持
+		return variables.sort((a, b) => {
+			// 色名部分を抽出（例: "red-500" → "red"）
+			const aColorName = a.name.replace(/-\d+$/, "");
+			const bColorName = b.name.replace(/-\d+$/, "");
+
+			// 同じ色名の場合のみ数値でソート
+			if (aColorName === bColorName) {
+				const aNum = parseInt(a.name.match(/\d+/)?.[0] || "0", 10);
+				const bNum = parseInt(b.name.match(/\d+/)?.[0] || "0", 10);
+				return aNum - bNum;
+			}
+
+			// 異なる色名の場合は元の順序を維持（安定ソート）
+			return 0;
+		});
+	}
+
 	if (namespace === "spacing") {
 		// スペーシング: 数値でソート
 		return variables.sort((a, b) => {

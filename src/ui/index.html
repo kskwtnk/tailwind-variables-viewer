@@ -5,21 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tailwind Variables Viewer</title>
 </head>
-<body class="font-sans leading-normal text-gray-900 bg-white">
+<body class="bg-white font-sans leading-normal text-gray-900">
   <div id="app" class="flex min-h-screen">
     <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 shrink-0">
-      <div class="sticky top-0 py-6 px-3">
-        <h1 class="text-xl font-bold px-3">Tailwind CSS v4<br>Theme Variables</h1>
+    <aside class="w-64 shrink-0 border-r border-gray-200 bg-white">
+      <div class="sticky top-0 px-3 py-6">
+        <h1 class="px-3 text-xl font-bold">Tailwind CSS v4<br>Theme Variables</h1>
         <nav id="sidebar-nav" class="mt-5">
-          <p class="text-sm text-gray-500 px-3">Loading...</p>
+          <p class="px-3 text-sm text-gray-500">Loading...</p>
         </nav>
       </div>
     </aside>
 
     <!-- Main content -->
-    <main id="variables" class="flex-1 p-6 overflow-auto">
-      <p class="p-8 text-gray-500 text-center">Loading variables...</p>
+    <main id="variables" class="grow overflow-auto px-6 pt-6 pb-8">
+      <p class="p-8 text-center text-gray-500">Loading variables...</p>
     </main>
   </div>
 
