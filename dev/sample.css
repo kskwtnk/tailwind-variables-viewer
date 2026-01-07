@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-	/* Custom brand colors */
+	/* Custom colors */
 	--color-brand-primary: oklch(0.65 0.2 200);
 	--color-brand-secondary: oklch(0.75 0.15 280);
 	--color-brand-accent: oklch(0.6 0.25 150);
