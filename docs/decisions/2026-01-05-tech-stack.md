@@ -1,9 +1,11 @@
 # ADR-001: 技術スタック選定（2026年1月5日）
 
 ## 状態
+
 採用
 
 ## コンテキスト
+
 Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数を可視化するCLIツールを開発する。参考: [tailwind-config-viewer](https://github.com/rogden/tailwind-config-viewer/)（v3のみ対応）
 
 **要件**:
@@ -38,12 +40,14 @@ Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数
 ## 理由
 
 ### 1. TypeScript採用
+
 - 型安全性によるバグ削減
 - IDE補完とリファクタリング支援
 - 型がドキュメント代わり
 - Node.js/CLIツールでの主流
 
 ### 2. PostCSS（パーサー）
+
 - 業界標準のCSS解析ツール
 - エッジケース対応済み
 - 信頼性が高い
@@ -51,6 +55,7 @@ Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数
 **却下**: 正規表現パーサー（脆弱でメンテナンスが困難）
 
 ### 3. Vite Preview Server（サーバー）
+
 - 既にビルドツールとして使用
 - preview機能で本番相当のサーバー提供
 - ポート自動検索機能内蔵（`strictPort: false`）
@@ -61,6 +66,7 @@ Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数
 - 削減できた依存: `koa`, `@koa/router`, `koa-static`, `portfinder`
 
 ### 4. picocolors（ターミナル出力）
+
 - 超軽量（chalkの1/14サイズ、~7KB）
 - CommonJS/ESM両対応
 - ゼロ依存
@@ -69,6 +75,7 @@ Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数
 **却下**: chalk v5（ESM専用でCLIツールに不便、サイズ大）
 
 ### 5. Node.js標準API（ファイルシステム）
+
 - `fs/promises`で必要な機能を提供（readFile, access）
 - Node.js 14+で安定
 - 外部依存不要
@@ -76,6 +83,7 @@ Tailwind CSS v4の`@theme`ディレクティブで定義されたテーマ変数
 **却下**: fs-extra（標準APIで十分、依存削減）
 
 ### 6. Svelte（フロントエンド）
+
 - 軽量（ランタイム~2KB）
 - シンプルなリアクティビティ（`let`, `$:`）
 - TypeScript公式サポート
@@ -139,6 +147,7 @@ Svelte UI (dist/)
 ## 実装例
 
 ### サーバー起動（lib/server.ts）
+
 ```typescript
 import { preview } from 'vite';
 
@@ -165,6 +174,7 @@ export async function startServer(organizedVariables, options = {}) {
 ```
 
 ### Svelte UI（src/App.svelte）
+
 ```svelte
 <script lang="ts">
   import { onMount } from 'svelte';
