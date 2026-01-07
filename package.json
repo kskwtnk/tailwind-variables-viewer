@@ -23,7 +23,7 @@
     "build:cli": "tsc",
     "build": "bun scripts/build.ts",
     "check": "biome check --write .",
-    "dev": "bun scripts/dev.ts",
+    "dev": "bun run build && bun run build:cli && node dist/cli/index.js -c dev/sample.css -o",
     "format": "biome format --write .",
     "lint": "biome lint .",
     "prepublishOnly": "bun run build && bun run build:cli",
@@ -40,10 +40,11 @@
   "author": "Keisuke Watanuki (kskwtnk)",
   "license": "MIT",
   "dependencies": {
+    "chokidar": "^5.0.0",
     "commander": "^14.0.2",
-    "open": "^11.0.0",
     "picocolors": "^1.1.1",
-    "postcss": "^8.5.6"
+    "postcss": "^8.5.6",
+    "vite": "^7.3.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",

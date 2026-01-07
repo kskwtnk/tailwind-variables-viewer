@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 
-import { access } from "node:fs/promises";
-import { resolve } from "node:path";
+import { access, mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import open from "open";
 import pc from "picocolors";
+import { createServer } from "vite";
 import { organizeVariables } from "../core/extractor.js";
-import { startServer } from "../core/server.js";
 import { parseThemeVariables } from "../core/theme-parser.js";
 import type { ThemeVariable } from "../core/types.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const program = new Command();
 
@@ -54,32 +57,110 @@ async function runViewer(options: {
 	console.log(pc.cyan("Checking CSS files..."));
 	await validateFiles(options.config);
 
-	// 2. Parse @theme variables from CSS
-	console.log(pc.cyan("Parsing @theme directives..."));
-	const parsedTheme = await parseThemeVariables(options.config[0]);
+	// 2. Parse and organize variables
+	const { organized, totalVariables } = await parseAndOrganize(options.config);
+
+	// 3. Write variables as static JSON file
+	// Use CLI script location, not current working directory
+	// __dirname = dist/cli, so ../ui = dist/ui
+	const distUiDir = resolve(__dirname, "..", "ui");
+	const apiDir = resolve(distUiDir, "api");
+	await mkdir(apiDir, { recursive: true });
+	await writeFile(
+		resolve(apiDir, "variables.json"),
+		JSON.stringify(organized, null, 2),
+		"utf8",
+	);
+
+	// 4. Start Vite dev server with HMR
+	console.log(pc.cyan("\nStarting server..."));
+	const server = await createServer({
+		configFile: false,
+		plugins: [
+			{
+				async configureServer(server) {
+					// Watch CSS file for changes and trigger full reload
+					const chokidar = await import("chokidar");
+					const cssFilePath = resolve(options.config[0]);
+					const watcher = chokidar.watch(cssFilePath, {
+						awaitWriteFinish: { pollInterval: 50, stabilityThreshold: 100 },
+						ignoreInitial: true,
+					});
+
+					watcher.on("change", async () => {
+						console.log(pc.cyan("\n🔄 CSS file changed, reloading..."));
+						try {
+							// Re-parse and update variables
+							const result = await parseAndOrganize(options.config);
+							await writeFile(
+								resolve(apiDir, "variables.json"),
+								JSON.stringify(result.organized, null, 2),
+								"utf8",
+							);
+							// Trigger full page reload via WebSocket
+							server.ws.send({
+								path: "*",
+								type: "full-reload",
+							});
+							console.log(pc.green("✓ Reloaded successfully"));
+							console.log(pc.gray(`Variables: ${result.totalVariables}\n`));
+						} catch (error) {
+							console.error(
+								pc.red("Error reloading:"),
+								error instanceof Error ? error.message : "Unknown error",
+							);
+						}
+					});
+				},
+				name: "watch-css",
+			},
+		],
+		root: distUiDir,
+		server: {
+			open: options.open,
+			port: options.port,
+			strictPort: false,
+		},
+	});
+
+	await server.listen();
+
+	const actualPort = server.config.server.port || options.port;
+	const url = `http://localhost:${actualPort}`;
+
+	console.log(pc.green("\n✓ Server started"));
+	console.log(pc.cyan(`→ ${url}`));
+	console.log(pc.gray(`\nVariables: ${totalVariables}`));
+	console.log(pc.gray("Watching for changes..."));
+	console.log(pc.gray("Press Ctrl+C to stop\n"));
+
+	// Graceful shutdown
+	process.on("SIGINT", async () => {
+		console.log(pc.yellow("\n\nShutting down..."));
+		await server.close();
+		console.log(pc.green("✓ Server closed"));
+		process.exit(0);
+	});
+}
+
+/**
+ * Parse and organize theme variables
+ */
+async function parseAndOrganize(configPaths: string[]) {
+	// Parse @theme variables from CSS
+	const parsedTheme = await parseThemeVariables(configPaths[0]);
 
 	// @import "tailwindcss"がある場合、デフォルト変数も読み込む
 	let allVariables = [...parsedTheme.variables];
 	if (parsedTheme.hasImport) {
-		console.log(
-			pc.cyan(
-				'Detected @import "tailwindcss", loading default theme variables...',
-			),
-		);
 		try {
 			const tailwindThemePath = resolve("node_modules/tailwindcss/theme.css");
 			const tailwindTheme = await parseThemeVariables(tailwindThemePath, false);
-			console.log(
-				pc.green(
-					`✓ Loaded ${tailwindTheme.variables.length} default theme variables`,
-				),
-			);
 
 			// リセット処理を適用
 			let defaultVars = tailwindTheme.variables;
 			if (parsedTheme.hasReset) {
 				// --*: initial が存在する場合、全デフォルト変数を除外
-				console.log(pc.cyan("Applying global reset (--*: initial)"));
 				defaultVars = [];
 			} else {
 				// ネームスペース別リセットや個別リセットを処理
@@ -92,26 +173,13 @@ async function runViewer(options: {
 				...parsedTheme.variables,
 			]);
 		} catch {
-			console.warn(pc.yellow("Warning: Could not load Tailwind default theme"));
+			// Silently fail if Tailwind default theme not found
 		}
 	}
 
-	if (allVariables.length === 0) {
-		console.warn(pc.yellow("⚠ No @theme variables found"));
-	}
-
-	console.log(
-		pc.green(
-			`✓ Found ${allVariables.length} @theme variables (user: ${parsedTheme.variables.length})`,
-		),
-	);
-
-	// 3. Organize variables for display (skip build process)
-	console.log(pc.cyan("Organizing variables..."));
-	// theme-parser.tsから取得した変数を直接extractor.tsで整理
-	// ParsedCSS形式に変換してorganizeVariables()に渡す
+	// Organize variables for display
 	const parsedCSS = {
-		filePath: options.config[0],
+		filePath: configPaths[0],
 		variables: allVariables.map((v) => ({
 			name: v.name,
 			value: v.value,
@@ -124,41 +192,7 @@ async function runViewer(options: {
 		0,
 	);
 
-	if (totalVariables === 0) {
-		console.log(pc.yellow("⚠ No theme variables found"));
-	} else {
-		console.log(pc.green(`✓ Extracted ${totalVariables} theme variables`));
-
-		// Display variables by namespace
-		for (const [namespace, vars] of Object.entries(organized)) {
-			console.log(pc.gray(`  - ${namespace} (${vars.length})`));
-		}
-	}
-
-	// 4. Start server
-	console.log(pc.cyan("\nStarting server..."));
-	const { server, url } = await startServer(organized, {
-		port: options.port,
-	});
-
-	console.log(pc.green("\n✓ Server started"));
-	console.log(pc.cyan(`→ ${url}`));
-	console.log(pc.gray(`\nVariables: ${totalVariables}`));
-	console.log(pc.gray("Press Ctrl+C to stop\n"));
-
-	// 5. Open browser if requested
-	if (options.open) {
-		await open(url);
-	}
-
-	// Graceful shutdown
-	process.on("SIGINT", () => {
-		console.log(pc.yellow("\n\nShutting down..."));
-		server.close(() => {
-			console.log(pc.green("✓ Server closed"));
-			process.exit(0);
-		});
-	});
+	return { organized, totalVariables };
 }
 
 /**
@@ -230,6 +264,7 @@ async function validateFiles(filePaths: string[]) {
 program.addHelpText(
 	"after",
 	`
+
 
 ${pc.bold("Examples:")}
   $ tailwind-variables-viewer -c ./src/app.css

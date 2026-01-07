@@ -1,7 +1,5 @@
 // lib/types.ts
 
-import type { Server } from "node:http";
-
 // @themeパーサー関連
 export interface ThemeVariable {
 	name: string; // --color-brand-500
@@ -42,18 +40,6 @@ export interface OrganizedVariable {
 
 export interface OrganizedVariables {
 	[namespace: string]: OrganizedVariable[];
-}
-
-// サーバー関連
-export interface ServerOptions {
-	port?: number;
-	host?: string;
-}
-
-export interface ServerResult {
-	server: Server;
-	port: number;
-	url: string;
 }
 
 // ネームスペース定数

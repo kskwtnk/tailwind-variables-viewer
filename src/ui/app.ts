@@ -1,4 +1,4 @@
-import type { OrganizedVariable, OrganizedVariables } from "../lib/types.js";
+import type { OrganizedVariable, OrganizedVariables } from "../core/types.js";
 
 // Fetch and render variables
 fetch("/api/variables.json")
@@ -88,26 +88,32 @@ function renderPreview(variable: OrganizedVariable): string {
 
 function setupSearch(): void {
 	const search = document.getElementById("search") as HTMLInputElement;
+
 	search.addEventListener("input", (e) => {
 		const target = e.target as HTMLInputElement;
 		const query = target.value.toLowerCase();
-		const cards = document.querySelectorAll(".variable-card");
+		filterVariables(query);
+	});
+}
 
-		cards.forEach((card) => {
-			const htmlCard = card as HTMLElement;
-			const name = htmlCard.dataset.varName?.toLowerCase() || "";
-			htmlCard.style.display = name.includes(query) ? "" : "none";
-		});
+function filterVariables(query: string): void {
+	const lowerQuery = query.toLowerCase();
+	const cards = document.querySelectorAll(".variable-card");
 
-		// Hide empty namespaces
-		const sections = document.querySelectorAll(".namespace-section");
-		sections.forEach((section) => {
-			const htmlSection = section as HTMLElement;
-			const visibleCards = section.querySelectorAll(
-				'.variable-card[style=""], .variable-card:not([style*="display: none"])',
-			);
-			htmlSection.style.display = visibleCards.length > 0 ? "" : "none";
-		});
+	cards.forEach((card) => {
+		const htmlCard = card as HTMLElement;
+		const name = htmlCard.dataset.varName?.toLowerCase() || "";
+		htmlCard.style.display = name.includes(lowerQuery) ? "" : "none";
+	});
+
+	// Hide empty namespaces
+	const sections = document.querySelectorAll(".namespace-section");
+	sections.forEach((section) => {
+		const htmlSection = section as HTMLElement;
+		const visibleCards = section.querySelectorAll(
+			'.variable-card[style=""], .variable-card:not([style*="display: none"])',
+		);
+		htmlSection.style.display = visibleCards.length > 0 ? "" : "none";
 	});
 }
 
