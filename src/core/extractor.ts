@@ -22,9 +22,9 @@ function detectType(value: string): VariableType {
 		return "size";
 	}
 
-	// フォント: 引用符で囲まれた文字列
+	// フォントファミリー: 引用符で囲まれた文字列
 	if (/["'].*["']/.test(value)) {
-		return "font";
+		return "fontFamily";
 	}
 
 	// 変数参照: var(--*)
@@ -124,6 +124,55 @@ function sortVariables(
 		});
 	}
 
+	if (namespace === "text") {
+		// テキストサイズ: デフォルトサイズ順（小さい順）→ カスタム（小さい順）
+		const defaultOrder = [
+			"xs",
+			"sm",
+			"base",
+			"lg",
+			"xl",
+			"2xl",
+			"3xl",
+			"4xl",
+			"5xl",
+			"6xl",
+			"7xl",
+			"8xl",
+			"9xl",
+		];
+
+		return variables.sort((a, b) => {
+			const aIndex = defaultOrder.indexOf(a.name);
+			const bIndex = defaultOrder.indexOf(b.name);
+
+			// 両方ともデフォルトの場合
+			if (aIndex !== -1 && bIndex !== -1) {
+				return aIndex - bIndex;
+			}
+
+			// aのみデフォルト
+			if (aIndex !== -1) {
+				return -1;
+			}
+
+			// bのみデフォルト
+			if (bIndex !== -1) {
+				return 1;
+			}
+
+			// 両方ともカスタム: サイズ（rem/px）でソート
+			const aSize = parseFloat(a.value);
+			const bSize = parseFloat(b.value);
+			if (!Number.isNaN(aSize) && !Number.isNaN(bSize)) {
+				return aSize - bSize;
+			}
+
+			// サイズが取れない場合はアルファベット順
+			return a.name.localeCompare(b.name);
+		});
+	}
+
 	// デフォルト: アルファベット順
 	return variables.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -160,7 +209,12 @@ function organizeVariables(parsedResults: ParsedCSS[]): OrganizedVariables {
 
 			// 実際の値（解決済みまたは元の値）でタイプ判定
 			const valueForType = resolvedValue || variable.value;
-			const type = detectType(valueForType);
+			let type = detectType(valueForType);
+
+			// textネームスペースでtype === "size"の場合はfontSizeに変更
+			if (namespace === "text" && type === "size") {
+				type = "fontSize";
+			}
 
 			const organizedVar: OrganizedVariable = {
 				name: shortName,

@@ -61,12 +61,12 @@ function renderSidebar(variables: OrganizedVariables): void {
 // ネームスペースの表示順序（コメントアウトで段階的に追加可能）
 const NAMESPACE_ORDER = [
 	"color",
-	// "fontSize",
+	"text",
+	"font",
 	// "spacing",
 	// "shadow",
 	// "radius",
 	// "breakpoint",
-	// "fontFamily",
 ];
 
 /**
@@ -104,7 +104,7 @@ function renderVariables(variables: OrganizedVariables): void {
 	if (!variables || Object.keys(variables).length === 0) {
 		container.innerHTML = `
 			<div class="p-6 text-center">
-				<h2 class="text-2xl font-semibold text-gray-700">No variables found</h2>
+				<h2 class="text-2xl font-semibold">No variables found</h2>
 				<p class="mt-3 text-gray-500">Make sure your CSS files contain <code class="rounded bg-gray-100 px-2 py-1 text-sm">@theme</code> directives.</p>
 			</div>
 		`;
@@ -118,6 +118,16 @@ function renderVariables(variables: OrganizedVariables): void {
 
 	const html = orderedEntries
 		.map(([namespace, vars]) => {
+			// textネームスペースの場合はtype === "fontSize"のみ表示（line-heightを除外）
+			if (namespace === "text") {
+				vars = vars.filter((v) => v.type === "fontSize");
+			}
+
+			// fontネームスペースの場合はtype === "fontFamily"のみ表示（weightを除外）
+			if (namespace === "font") {
+				vars = vars.filter((v) => v.type === "fontFamily");
+			}
+
 			// colorネームスペースの場合は色名グループごとに分ける
 			if (namespace === "color") {
 				const colorGroups = groupByColorName(vars);
@@ -133,7 +143,7 @@ function renderVariables(variables: OrganizedVariables): void {
 												<div class="grid auto-rows-max gap-2" data-var-name="${v.varName}">
 													${renderPreview(v)}
 													<div class="grid gap-1">
-														<code class="font-mono text-sm text-gray-700">${v.varName}</code>
+														<code class="font-mono text-sm">${v.varName}</code>
 														<span class="text-xs text-gray-500">${v.value}</span>
 													</div>
 												</div>
@@ -148,7 +158,7 @@ function renderVariables(variables: OrganizedVariables): void {
 
 				return `
 					<section id="${namespace}" class="grid scroll-mt-8 gap-y-7 wrap-anywhere not-first:mt-12">
-						<h2 class="text-2xl font-semibold text-gray-700 capitalize">
+						<h2 class="text-2xl font-semibold capitalize">
 							${namespace} <span class="text-sm font-normal text-gray-500">(${vars.length})</span>
 						</h2>
 						<div class="grid grid-cols-[repeat(auto-fit,minmax(--spacing(40),1fr))] gap-x-4 gap-y-10">
@@ -158,10 +168,36 @@ function renderVariables(variables: OrganizedVariables): void {
 				`;
 			}
 
+			// textとfontネームスペースは縦一列レイアウト
+			if (namespace === "text" || namespace === "font") {
+				return `
+					<section id="${namespace}" class="scroll-mt-8 not-first:mt-12">
+						<h2 class="text-2xl font-semibold capitalize">
+							${namespace} <span class="text-sm font-normal text-gray-500">(${vars.length})</span>
+						</h2>
+						<div class="mt-4 flex flex-col gap-y-8">
+							${vars
+								.map(
+									(v) => `
+								<div class="flex flex-col gap-2 bg-white" data-var-name="${v.varName}">
+									${renderPreview(v)}
+									<div class="flex flex-col gap-1">
+										<code class="font-mono text-sm break-all">${v.varName}</code>
+										<span class="text-xs break-all text-gray-500">${v.value}</span>
+									</div>
+								</div>
+							`,
+								)
+								.join("")}
+						</div>
+					</section>
+				`;
+			}
+
 			// その他のネームスペースは従来通り
 			return `
 				<section id="${namespace}" class="scroll-mt-8 not-first:mt-12">
-					<h2 class="text-2xl font-semibold text-gray-700 capitalize">
+					<h2 class="text-2xl font-semibold capitalize">
 						${namespace} <span class="text-sm font-normal text-gray-500">(${vars.length})</span>
 					</h2>
 					<div class="mt-4 grid grid-cols-[repeat(auto-fit,minmax(--spacing(50),1fr))] gap-4">
@@ -171,7 +207,7 @@ function renderVariables(variables: OrganizedVariables): void {
 							<div class="flex flex-col gap-3 bg-white" data-var-name="${v.varName}">
 								${renderPreview(v)}
 								<div class="flex flex-col gap-1">
-									<code class="py-1 font-mono text-sm break-all text-gray-700">${v.varName}</code>
+									<code class="py-1 font-mono text-sm break-all">${v.varName}</code>
 									<span class="text-xs break-all text-gray-500">${v.value}</span>
 								</div>
 							</div>
@@ -194,11 +230,20 @@ function renderPreview(variable: OrganizedVariable): string {
 	if (variable.type === "color") {
 		return `<div class="h-10 w-full rounded-md after:block after:h-full after:rounded-md after:border after:border-gray-200 after:mix-blend-multiply after:content-['']" style="background: ${displayValue}"></div>`;
 	}
+
 	if (variable.type === "size") {
 		return `<div class="h-5 max-w-full min-w-0.5 rounded-md bg-blue-500" style="width: ${displayValue}"></div>`;
 	}
-	if (variable.type === "font") {
-		return `<div class="rounded-md border border-gray-200 bg-gray-50 p-2 text-base leading-normal" style="font-family: ${displayValue}">The quick brown fox</div>`;
+
+	// フォントサイズ（textネームスペース）
+	if (variable.type === "fontSize") {
+		return `<div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 leading-normal truncate" style="font-size: ${displayValue}">The quick brown fox jumps over the lazy dog</div>`;
 	}
+
+	// フォントファミリー（fontネームスペース）
+	if (variable.type === "fontFamily") {
+		return `<div class="rounded-md border border-gray-200 bg-gray-50 p-2 text-base leading-normal" style="font-family: ${displayValue}">The quick brown fox jumps over the lazy dog</div>`;
+	}
+
 	return "";
 }

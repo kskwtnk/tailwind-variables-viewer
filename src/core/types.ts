@@ -27,7 +27,13 @@ export interface ParsedCSS {
 }
 
 // 整理後の変数
-export type VariableType = "color" | "size" | "font" | "reference" | "other";
+export type VariableType =
+	| "color"
+	| "size"
+	| "fontSize"
+	| "fontFamily"
+	| "reference"
+	| "other";
 
 export interface OrganizedVariable {
 	name: string;
